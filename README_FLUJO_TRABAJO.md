@@ -4,7 +4,6 @@
 
 - `main`: Rama principal y estable (producción).
 - `dev`: Rama de desarrollo principal.
-- `feature/IDJira-descripcion`: Nuevas funcionalidades (ejemplo: `feature/EC-2-login-usuario`).
 - `bugfix/IDJira-descripcion`: Corrección de errores.
 - `hotfix/IDJira-descripcion`: Correcciones urgentes.
 - `release/version`: Preparar una nueva versión.
@@ -13,29 +12,33 @@
 
 - Todo commit debe incluir el ID del ticket de Jira al inicio:
   ```
-  EC-2: feat(auth): implementar login de usuario
+  EC-2: dev(auth): implementar login de usuario
   ```
 
 ## Flujo de trabajo
 
 1. **Crear rama**
-   - Desde `dev` o `feature`, crea una rama para tu ticket usando la convención.
+
+   - Desde `dev`, crea una rama para tu ticket usando la convención.
    - Ejemplo:
      ```
      git checkout dev
-     git checkout -b feature/EC-2-login-usuario
-     git push origin feature/EC-2-login-usuario
+     git checkout -b EC-2-login-usuario
+     git push origin EC-2-login-usuario
      ```
 
 2. **Desarrollar y hacer commits**
+
    - Realiza los cambios y haz commits descriptivos con el ID de Jira.
 
 3. **Abrir Pull Request**
+
    - Abre un PR hacia `dev` o `main`.
    - El título y/o la descripción deben incluir el ID del ticket de Jira (ejemplo: `Resolves EC-2`).
    - Solicita revisión de al menos un compañero.
 
 4. **Checks automáticos**
+
    - El PR debe pasar los checks de CI/CD (tests, lint, etc.) antes de merge.
 
 5. **Merge y cierre**
@@ -44,7 +47,7 @@
 
 ## Protección de ramas
 
-- Las ramas `main`, `dev` y `feature` están protegidas:
+- Las ramas `main`, `dev` están protegidas:
   - Solo se puede hacer merge mediante PR.
   - Se requiere revisión y aprobación.
   - Se bloquean los pushes directos y los force pushes.
