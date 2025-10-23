@@ -1,13 +1,35 @@
-import { Request, Response } from "express";
-import AuthService from "./auth.service";
+import { Controller, Post, Body, Get, UseGuards, Req } from '@nestjs/common';
+import { AuthService } from './auth.service';
+import { SignupDto } from './dto/signup.dto';
+import { LoginDto } from './dto/login.dto';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { RolesGuard } from './guards/roles.guard';
+import { Roles } from './decorators/roles.decorator';
 
-const authService = new AuthService();
+@Controller('auth')
+export class AuthController {
+  constructor(private readonly authService: AuthService) {}
 
-export default class AuthController {
-  async login(req: Request, res: Response) {
-    const { username, password } = req.body;
-    const token = await authService.login(username, password);
-    if (!token) return res.status(401).json({ message: "Unauthorized" });
-    return res.json({ accessToken: token });
+  @Post('signup')
+  signup(@Body() dto: SignupDto) {
+    return this.authService.signup(dto);
+  }
+
+  @Post('login')
+  login(@Body() dto: LoginDto) {
+    return this.authService.login(dto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('profile')
+  getProfile(@Req() req: any) {
+    return req.user;
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @Get('admin')
+  adminOnly() {
+    return { message: 'Solo admin accede' };
   }
 }

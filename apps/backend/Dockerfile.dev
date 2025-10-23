@@ -1,0 +1,26 @@
+# Dockerfile para desarrollo del backend
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Instalar pnpm
+RUN npm install -g pnpm
+
+# Copiar archivos de dependencias
+COPY package*.json ./
+COPY pnpm-lock.yaml ./
+
+# Instalar dependencias
+RUN pnpm install
+
+# Copiar código fuente
+COPY . .
+
+# Generar cliente de Prisma
+RUN pnpm db:generate
+
+# Exponer puerto
+EXPOSE 3000
+
+# Comando de desarrollo
+CMD ["pnpm", "start:dev"]
