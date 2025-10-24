@@ -5,7 +5,22 @@ jobs:
     docker:
       - image: cimg/node:20.18.0
     steps:
-      - checkout
+      - run:
+          name: Checkout repository (HTTPS using token)
+          command: |
+            # This job will clone the repository using a GitHub token stored in the
+            # CircleCI project environment variables as GITHUB_TOKEN.
+            # Create a Personal Access Token (or a fine-grained token) with
+            # read access to this repository and add it to CircleCI as GITHUB_TOKEN.
+            if [ -z "$GITHUB_TOKEN" ]; then
+              echo "GITHUB_TOKEN is not set. Please add it to Project Settings -> Environment Variables." >&2
+              exit 1
+            fi
+            git config --global http.version HTTP/1.1
+            # Clone via HTTPS using token (x-access-token works for Personal Access Tokens)
+            rm -rf ./* || true
+            git clone https://x-access-token:${GITHUB_TOKEN}@github.com/EcoMarket-utp/EcoMarket-utp.git .
+            git fetch --tags
       - run:
           name: Install pnpm
           command: |
@@ -58,7 +73,17 @@ jobs:
     docker:
       - image: cimg/node:20.18.0
     steps:
-      - checkout
+      - run:
+          name: Checkout repository (HTTPS using token)
+          command: |
+            if [ -z "$GITHUB_TOKEN" ]; then
+              echo "GITHUB_TOKEN is not set. Please add it to Project Settings -> Environment Variables." >&2
+              exit 1
+            fi
+            git config --global http.version HTTP/1.1
+            rm -rf ./* || true
+            git clone https://x-access-token:${GITHUB_TOKEN}@github.com/EcoMarket-utp/EcoMarket-utp.git .
+            git fetch --tags
       - run:
           name: Install pnpm
           command: |
