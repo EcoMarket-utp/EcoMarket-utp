@@ -2,8 +2,10 @@
 FROM node:20-bullseye-slim AS builder
 WORKDIR /app
 
-# Install pnpm locally to avoid global permissions issues
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# Install pnpm globally in the builder image using npm (builder runs as root so this is safe)
+# Avoid using `corepack prepare --activate` here because in some CI/container runtimes
+# corepack tries to unlink or replace /usr/local/bin/pnpm and can fail with EACCES.
+RUN npm install -g pnpm@10.18.2
 
 COPY package.json pnpm-lock.yaml ./
 COPY apps/backend/package.json ./apps/backend/package.json

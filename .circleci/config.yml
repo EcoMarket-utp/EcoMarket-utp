@@ -15,6 +15,14 @@ jobs:
     steps:
       - checkout
       - run:
+          name: Disable corepack if present
+          command: |
+            if command -v corepack >/dev/null 2>&1; then
+              corepack disable || true
+            fi
+            # Ensure any locally installed node_modules bins will be found in later steps
+            echo 'export PATH=$PWD/node_modules/.bin:$PATH' >> $BASH_ENV
+      - run:
           name: Ensure pnpm and install frontend deps
           command: |
             cd apps/frontend-angular
@@ -56,6 +64,13 @@ jobs:
     executor: node-exec
     steps:
       - checkout
+      - run:
+          name: Disable corepack if present
+          command: |
+            if command -v corepack >/dev/null 2>&1; then
+              corepack disable || true
+            fi
+            echo 'export PATH=$PWD/node_modules/.bin:$PATH' >> $BASH_ENV
       - run:
           name: Ensure pnpm and install backend deps
           command: |
