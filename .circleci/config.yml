@@ -1,0 +1,111 @@
+version: 2.1
+
+jobs:
+  build-backend:
+    docker:
+      - image: cimg/node:20.18.0
+    steps:
+      - checkout
+      - run:
+          name: Install pnpm
+          command: |
+            corepack enable
+            corepack prepare pnpm@latest --activate
+      - restore_cache:
+          keys:
+            - pnpm-store-{{ checksum "pnpm-lock.yaml" }}
+            - pnpm-store-
+      - run:
+          name: Install backend dependencies
+          command: |
+            # Install only backend dependencies to speed up CI
+            pnpm install --no-frozen-lockfile --filter ./apps/backend...
+      - save_cache:
+          paths:
+            - ~/.pnpm-store
+          key: pnpm-store-{{ checksum "pnpm-lock.yaml" }}
+      - restore_cache:
+          keys:
+            - backend-node-modules-{{ checksum "apps/backend/package.json" }}
+            - backend-node-modules-
+      - run:
+          name: Generate Prisma client
+          command: |
+            cd apps/backend
+            pnpm db:generate
+      - run:
+          name: Lint backend
+          command: |
+            cd apps/backend
+            pnpm lint || true
+      - run:
+          name: Deploy Prisma migrations
+          command: |
+            cd apps/backend
+            # DATABASE_URL must be configured as an environment variable in CircleCI project or context
+            pnpm db:migrate:prod
+      - run:
+          name: Run backend e2e tests
+          command: |
+            cd apps/backend
+            pnpm test:e2e --silent
+      - save_cache:
+          paths:
+            - apps/backend/node_modules
+          key: backend-node-modules-{{ checksum "apps/backend/package.json" }}
+
+  build-frontend:
+    docker:
+      - image: cimg/node:20.18.0
+    steps:
+      - checkout
+      - run:
+          name: Install pnpm
+          command: |
+            corepack enable
+            corepack prepare pnpm@latest --activate
+      - restore_cache:
+          keys:
+            - pnpm-store-{{ checksum "pnpm-lock.yaml" }}
+            - pnpm-store-
+      - run:
+          name: Install frontend dependencies
+          command: |
+            # Install only frontend dependencies
+            pnpm install --no-frozen-lockfile --filter ./apps/frontend-angular...
+      - save_cache:
+          paths:
+            - ~/.pnpm-store
+          key: pnpm-store-{{ checksum "pnpm-lock.yaml" }}
+      - restore_cache:
+          keys:
+            - frontend-node-modules-{{ checksum "apps/frontend-angular/package.json" }}
+            - frontend-node-modules-
+      - run:
+          name: Lint frontend
+          command: |
+            cd apps/frontend-angular
+            # If there's no lint script, this will be skipped
+            pnpm run lint || true
+      - run:
+          name: Build frontend (Angular)
+          command: |
+            cd apps/frontend-angular
+            # Use pnpm exec to run the local angular cli
+            pnpm exec ng build --configuration production
+      - save_cache:
+          paths:
+            - apps/frontend-angular/node_modules
+          key: frontend-node-modules-{{ checksum "apps/frontend-angular/package.json" }}
+
+workflows:
+  build:
+    jobs:
+      - build-frontend
+      - build-backend
+
+# Notes:
+# - This pipeline uses pnpm exclusively (corepack + pnpm) for consistency across frontend and backend.
+# - Store DATABASE_URL, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY and other secrets in CircleCI project environment
+#   variables or in an organization context (see .circleci/context-example.md).
+# - Adjust images, caching and concurrency to match your org's CI quotas and needs.

@@ -7,7 +7,9 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: false }));
+  app.useGlobalPipes(
+    new ValidationPipe({ whitelist: true, forbidNonWhitelisted: false }),
+  );
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('EcoMarket API')
@@ -16,10 +18,13 @@ async function bootstrap() {
     .addBearerAuth()
     .build();
   const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
+  // Swagger setup does not return a promise; explicitly ignore floating-promise lint rule if any
+
   SwaggerModule.setup('api/docs', app, swaggerDocument);
   const port = configService.get<number>('PORT', 3002);
-  
+
   await app.listen(port);
   console.log(`🚀 EcoMarket Backend running on port ${port}`);
 }
-bootstrap();
+// Call bootstrap and ignore the returned promise explicitly
+void bootstrap();
