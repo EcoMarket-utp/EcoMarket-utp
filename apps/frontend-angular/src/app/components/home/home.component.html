@@ -1,0 +1,37 @@
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-copy">
+      <h2>Marketplace Sostenible para Productos Reciclados</h2>
+      <p>Compra y vende productos únicos creados a partir de materiales reciclados. Juntos construimos un futuro más verde.</p>
+      <div class="hero-actions">
+        <a class="btn primary" routerLink="/products">Explorar productos</a>
+        <a class="btn outline" routerLink="/register">Regístrate</a>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="image-frame">
+        <img src="/assets/sample/hero.jpg" alt="Hero" />
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="how-it-works">
+  <h3>¿Cómo funciona?</h3>
+  <p class="lead">Tres simples pasos para formar parte de la economía circular</p>
+  <div class="steps">
+    <div class="step"> <div class="icon">♻️</div><h4>Recicla</h4><p>Transforma tus materiales reciclados en productos únicos y sostenibles.</p></div>
+    <div class="step"> <div class="icon">💲</div><h4>Vende</h4><p>Publica tus creaciones en nuestra plataforma y alcanza miles de compradores.</p></div>
+    <div class="step"> <div class="icon">📦</div><h4>Reutiliza</h4><p>Contribuye a un mundo más sostenible comprando y vendiendo productos eco-friendly.</p></div>
+  </div>
+</section>
+
+<section class="featured">
+  <div class="container">
+    <h3>Productos Destacados</h3>
+    <p class="lead">Descubre productos únicos creados con amor por el planeta</p>
+    <div class="grid">
+      <app-product-card *ngFor="let p of products" [product]="p"></app-product-card>
+    </div>
+  </div>
+</section>
