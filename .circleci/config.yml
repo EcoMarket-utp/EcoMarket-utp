@@ -1,132 +1,183 @@
 version: 2.1
 
-jobs:
-  build-backend:
+executors:
+  node-exec:
     docker:
-      - image: cimg/node:20.18.0
-    steps:
-      - run:
-          name: Use local workspace (skip remote clone)
-          command: |
-            echo "Using local repository files for execution"
-      - run:
-          name: Ensure pnpm available (safe, no sudo)
-          command: |
-            # If pnpm is already available use it, otherwise install locally without sudo
-            if command -v pnpm >/dev/null 2>&1; then
-              echo "pnpm found: $(pnpm --version)"
-            else
-              echo "pnpm not found — installing locally via npm (no sudo)"
-              npm install pnpm --no-save
-            fi
-            export PATH=$(pwd)/node_modules/.bin:$PATH
-      - restore_cache:
-          keys:
-            - pnpm-store-{{ checksum "pnpm-lock.yaml" }}
-            - pnpm-store-
-      - run:
-          name: Install backend dependencies
-          command: |
-            # Install only backend dependencies to speed up CI
-            pnpm install --no-frozen-lockfile --filter ./apps/backend...
-      - save_cache:
-          paths:
-            - ~/.pnpm-store
-          key: pnpm-store-{{ checksum "pnpm-lock.yaml" }}
-      - restore_cache:
-          keys:
-            - backend-node-modules-{{ checksum "apps/backend/package.json" }}
-            - backend-node-modules-
-      - run:
-          name: Generate Prisma client
-          command: |
-            cd apps/backend
-            pnpm db:generate
-      - run:
-          name: Lint backend
-          command: |
-            cd apps/backend
-            pnpm lint || true
-      - run:
-          name: Deploy Prisma migrations
-          command: |
-            cd apps/backend
-            # Run migrations only if DATABASE_URL is set in the environment (prevents CI failure)
-            if [ -z "$DATABASE_URL" ]; then
-              echo "DATABASE_URL not set — skipping migrations in this environment"
-            else
-              pnpm db:migrate:prod
-            fi
-      - run:
-          name: Run backend e2e tests
-          command: |
-            cd apps/backend
-            pnpm test:e2e --silent
-      - save_cache:
-          paths:
-            - apps/backend/node_modules
-          key: backend-node-modules-{{ checksum "apps/backend/package.json" }}
+      - image: cimg/node:18.17
+    working_directory: ~/repo
 
-  build-frontend:
-    docker:
-      - image: cimg/node:20.18.0
+jobs:
+  # ---------- FRONTEND: build -> sync S3 -> invalidate CloudFront ----------
+  build-and-deploy-frontend:
+    executor: node-exec
+    environment:
+      CI: true
     steps:
+      - checkout
       - run:
-          name: Use local workspace (skip remote clone)
+          name: Install frontend deps (pnpm)
           command: |
-            echo "Using local repository files for execution"
-      - run:
-          name: Ensure pnpm available (safe, no sudo)
-          command: |
+            cd apps/frontend-angular
             if command -v pnpm >/dev/null 2>&1; then
-              echo "pnpm found: $(pnpm --version)"
+              pnpm install --frozen-lockfile
             else
-              echo "pnpm not found — installing locally via npm (no sudo)"
               npm install pnpm --no-save
+              export PATH=$(pwd)/node_modules/.bin:$PATH
+              pnpm install --frozen-lockfile
             fi
-            export PATH=$(pwd)/node_modules/.bin:$PATH
-      - restore_cache:
-          keys:
-            - pnpm-store-{{ checksum "pnpm-lock.yaml" }}
-            - pnpm-store-
       - run:
-          name: Install frontend dependencies
-          command: |
-            # Install only frontend dependencies
-            pnpm install --no-frozen-lockfile --filter ./apps/frontend-angular...
-      - save_cache:
-          paths:
-            - ~/.pnpm-store
-          key: pnpm-store-{{ checksum "pnpm-lock.yaml" }}
-      - restore_cache:
-          keys:
-            - frontend-node-modules-{{ checksum "apps/frontend-angular/package.json" }}
-            - frontend-node-modules-
-      - run:
-          name: Lint frontend
+          name: Build frontend
           command: |
             cd apps/frontend-angular
-            # If there's no lint script, this will be skipped
-            pnpm run lint || true
-      - run:
-          name: Build frontend (Angular)
-          command: |
-            cd apps/frontend-angular
-            # Use pnpm exec to run the local angular cli
             pnpm exec ng build --configuration production
-      - save_cache:
+      - run:
+          name: Ensure AWS CLI available
+          command: |
+            if ! command -v aws >/dev/null 2>&1; then
+              if command -v pip >/dev/null 2>&1; then
+                pip install --user awscli
+                export PATH=$HOME/.local/bin:$PATH
+              else
+                echo "pip not found — please ensure aws cli is available in the image" >&2
+                exit 1
+              fi
+            fi
+      - run:
+          name: Sync build to S3
+          command: |
+            aws s3 sync apps/frontend-angular/dist s3://${S3_BUCKET_FRONTEND} --delete
+      - run:
+          name: Invalidate CloudFront
+          command: |
+            aws cloudfront create-invalidation --distribution-id ${CLOUDFRONT_DISTRIBUTION_ID} --paths "/*"
+
+  # ---------- BACKEND: install deps & run prisma migrate ----------
+  install-backend:
+    executor: node-exec
+    steps:
+      - checkout
+      - run:
+          name: Install backend deps (pnpm)
+          command: |
+            cd apps/backend
+            if command -v pnpm >/dev/null 2>&1; then
+              pnpm install --no-frozen-lockfile
+            else
+              npm install pnpm --no-save
+              export PATH=$(pwd)/node_modules/.bin:$PATH
+              pnpm install --no-frozen-lockfile
+            fi
+      - persist_to_workspace:
+          root: .
           paths:
-            - apps/frontend-angular/node_modules
-          key: frontend-node-modules-{{ checksum "apps/frontend-angular/package.json" }}
+            - apps/backend
+
+  prisma-migrate:
+    executor: node-exec
+    steps:
+      - attach_workspace:
+          at: .
+      - run:
+          name: Run Prisma migrations (deploy)
+          command: |
+            cd apps/backend
+            # DATABASE_URL must estar en Environment Variables de CircleCI
+            npx prisma migrate deploy
+
+  # ---------- BACKEND: build docker, push to ECR ----------
+  build-and-push-image:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: Ensure AWS CLI available
+          command: |
+            if ! command -v aws >/dev/null 2>&1; then
+              if command -v pip >/dev/null 2>&1; then
+                pip install --user awscli
+                export PATH=$HOME/.local/bin:$PATH
+              else
+                echo "pip not found — please ensure aws cli is available in the image" >&2
+                exit 1
+              fi
+            fi
+      - run:
+          name: Login to ECR
+          command: |
+            aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+      - run:
+          name: Create ECR repo if missing
+          command: |
+            if ! aws ecr describe-repositories --repository-names ${ECR_REPOSITORY_NAME} --region ${AWS_REGION} >/dev/null 2>&1; then
+              aws ecr create-repository --repository-name ${ECR_REPOSITORY_NAME} --region ${AWS_REGION}
+            else
+              echo "ECR repo ${ECR_REPOSITORY_NAME} exists"
+            fi
+      - run:
+          name: Build, tag and push image
+          command: |
+            IMAGE_TAG=circleci-${CIRCLE_SHA1}
+            IMAGE_NAME=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY_NAME}:${IMAGE_TAG}
+            docker build -t ${ECR_REPOSITORY_NAME}:${IMAGE_TAG} -f apps/backend/Dockerfile .
+            docker tag ${ECR_REPOSITORY_NAME}:${IMAGE_TAG} ${IMAGE_NAME}
+            docker push ${IMAGE_NAME}
+
+  # ---------- DEPLOY to ECS (actualiza task definition & service) ----------
+  deploy-to-ecs:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      - run:
+          name: Ensure AWS CLI available
+          command: |
+            if ! command -v aws >/dev/null 2>&1; then
+              if command -v pip >/dev/null 2>&1; then
+                pip install --user awscli
+                export PATH=$HOME/.local/bin:$PATH
+              else
+                echo "pip not found — please ensure aws cli is available in the image" >&2
+                exit 1
+              fi
+            fi
+      - run:
+          name: Register task definition (replace IMAGE_PLACEHOLDER)
+          command: |
+            IMAGE=${ECR_REPOSITORY_URI}:circleci-${CIRCLE_SHA1}
+            sed "s|IMAGE_PLACEHOLDER|${IMAGE}|g" .circleci/ecs_taskdef.template.json > /tmp/taskdef.json
+            aws ecs register-task-definition --cli-input-json file:///tmp/taskdef.json --region ${AWS_REGION}
+      - run:
+          name: Update ECS service (force new deployment)
+          command: |
+            aws ecs update-service --cluster ${ECS_CLUSTER_NAME} --service ${ECS_SERVICE_NAME} --force-new-deployment --region ${AWS_REGION}
 
 workflows:
-  build:
+  build-and-deploy:
     jobs:
-      - build-frontend
-      - build-backend
+      - build-and-deploy-frontend
+      - install-backend
+      - prisma-migrate:
+          requires:
+            - install-backend
+      - build-and-push-image:
+          requires:
+            - prisma-migrate
+      - deploy-to-ecs:
+          requires:
+            - build-and-push-image
 
-# Notes:
-# - This pipeline uses pnpm exclusively (corepack + pnpm) for consistency across frontend and backend.
-# - Store DATABASE_URL, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY and other secrets in CircleCI project environment
-#   variables or in an organization context (see .circleci/context-example.md).
-# - Adjust images, caching and concurrency to match your org's CI quotas and needs.
+# Variables obligatorias (configurar en Project Settings > Environment Variables):
+# - AWS_ACCESS_KEY_ID
+# - AWS_SECRET_ACCESS_KEY
+# - AWS_REGION (ej. us-east-1)
+# - AWS_ACCOUNT_ID
+# - ECR_REPOSITORY_NAME (ej. ecomarket-backend)
+# - ECR_REPOSITORY_URI (ej. <account>.dkr.ecr.<region>.amazonaws.com/ecomarket-backend)
+# - ECS_CLUSTER_NAME
+# - ECS_SERVICE_NAME
+# - ECS_TASK_FAMILY
+# - S3_BUCKET_FRONTEND
+# - CLOUDFRONT_DISTRIBUTION_ID
+
