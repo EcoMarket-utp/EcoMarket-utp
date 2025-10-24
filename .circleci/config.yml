@@ -3,7 +3,8 @@ version: 2.1
 executors:
   node-exec:
     docker:
-      - image: cimg/node:18.17
+      # Use Node >= 18.18 because Prisma requires Node >= 18.18 in postinstall
+      - image: cimg/node:18.20
     working_directory: ~/repo
 
 jobs:
@@ -23,21 +24,22 @@ jobs:
             # Ensure any locally installed node_modules bins will be found in later steps
             echo 'export PATH=$PWD/node_modules/.bin:$PATH' >> $BASH_ENV
       - run:
-          name: Ensure pnpm and install frontend deps
+          name: Ensure pnpm and install frontend deps (workspace-aware)
           command: |
-            cd apps/frontend-angular
+            # Run installs from repo root and use --filter so pnpm uses the workspace lockfile
             # Install pnpm locally if not present to avoid global permission errors
             if ! command -v pnpm >/dev/null 2>&1; then
               echo "pnpm not found — installing locally via npm (no sudo)"
               npm install pnpm --no-save
             fi
-            export PATH=$(pwd)/node_modules/.bin:$PATH
-            pnpm install --frozen-lockfile
+            echo 'export PATH=$PWD/node_modules/.bin:$PATH' >> $BASH_ENV
+            # Install only deps required for the frontend package but let pnpm read the root lockfile
+            pnpm install --frozen-lockfile --filter ./apps/frontend-angular...
       - run:
           name: Build frontend
           command: |
-            cd apps/frontend-angular
-            pnpm exec ng build --configuration production
+            # Run the build for the frontend package via workspace filter
+            pnpm --filter ./apps/frontend-angular... exec ng build --configuration production
       - run:
           name: Ensure AWS CLI available
           command: |
@@ -72,16 +74,16 @@ jobs:
             fi
             echo 'export PATH=$PWD/node_modules/.bin:$PATH' >> $BASH_ENV
       - run:
-          name: Ensure pnpm and install backend deps
+          name: Ensure pnpm and install backend deps (workspace-aware)
           command: |
-            cd apps/backend
             # Install pnpm locally if not present to avoid global permission errors
             if ! command -v pnpm >/dev/null 2>&1; then
               echo "pnpm not found — installing locally via npm (no sudo)"
               npm install pnpm --no-save
             fi
-            export PATH=$(pwd)/node_modules/.bin:$PATH
-            pnpm install --no-frozen-lockfile
+            echo 'export PATH=$PWD/node_modules/.bin:$PATH' >> $BASH_ENV
+            # Install only backend deps but let pnpm read the root lockfile
+            pnpm install --no-frozen-lockfile --filter ./apps/backend...
       - persist_to_workspace:
           root: .
           paths:
