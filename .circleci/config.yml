@@ -10,10 +10,16 @@ jobs:
           command: |
             echo "Using local repository files for execution"
       - run:
-          name: Install pnpm
+          name: Ensure pnpm available (safe, no sudo)
           command: |
-            corepack enable
-            corepack prepare pnpm@latest --activate
+            # If pnpm is already available use it, otherwise install locally without sudo
+            if command -v pnpm >/dev/null 2>&1; then
+              echo "pnpm found: $(pnpm --version)"
+            else
+              echo "pnpm not found — installing locally via npm (no sudo)"
+              npm install pnpm --no-save
+            fi
+            export PATH=$(pwd)/node_modules/.bin:$PATH
       - restore_cache:
           keys:
             - pnpm-store-{{ checksum "pnpm-lock.yaml" }}
@@ -70,10 +76,15 @@ jobs:
           command: |
             echo "Using local repository files for execution"
       - run:
-          name: Install pnpm
+          name: Ensure pnpm available (safe, no sudo)
           command: |
-            corepack enable
-            corepack prepare pnpm@latest --activate
+            if command -v pnpm >/dev/null 2>&1; then
+              echo "pnpm found: $(pnpm --version)"
+            else
+              echo "pnpm not found — installing locally via npm (no sudo)"
+              npm install pnpm --no-save
+            fi
+            export PATH=$(pwd)/node_modules/.bin:$PATH
       - restore_cache:
           keys:
             - pnpm-store-{{ checksum "pnpm-lock.yaml" }}
