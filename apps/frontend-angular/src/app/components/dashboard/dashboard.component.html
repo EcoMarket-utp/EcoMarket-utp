@@ -1,0 +1,47 @@
+<div class="min-h-screen bg-gray-50">
+  <!-- Navigation removed: use global <app-navbar> instead -->
+
+  <!-- Main Content -->
+  <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+    <div class="px-4 py-6 sm:px-0">
+      <div class="border-4 border-dashed border-gray-200 rounded-lg p-8">
+        <div class="text-center">
+          <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
+            <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+          </div>
+          <h3 class="mt-2 text-sm font-medium text-gray-900">¡Bienvenido a EcoMarket!</h3>
+          <p class="mt-1 text-sm text-gray-500">
+            Has iniciado sesión exitosamente en tu dashboard.
+          </p>
+          
+          <!-- User Info Card -->
+          <div class="mt-6 max-w-md mx-auto bg-white overflow-hidden shadow rounded-lg">
+            <div class="px-4 py-5 sm:p-6">
+              <h3 class="text-lg leading-6 font-medium text-gray-900">Información del usuario</h3>
+              <div class="mt-2 max-w-xl text-sm text-gray-500">
+                <div class="space-y-2">
+                  <p><strong>Email:</strong> {{ currentUser?.email }}</p>
+                  <p><strong>Nombre:</strong> {{ currentUser?.firstName }} {{ currentUser?.lastName }}</p>
+                  <p><strong>Rol:</strong> 
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                          [class.bg-green-100]="currentUser?.role === 'customer'"
+                          [class.text-green-800]="currentUser?.role === 'customer'"
+                          [class.bg-blue-100]="currentUser?.role === 'seller'"
+                          [class.text-blue-800]="currentUser?.role === 'seller'"
+                          [class.bg-purple-100]="currentUser?.role === 'admin'"
+                          [class.text-purple-800]="currentUser?.role === 'admin'">
+                      {{ currentUser?.role === 'customer' ? 'Cliente' : 
+                         currentUser?.role === 'seller' ? 'Vendedor' : 'Administrador' }}
+                    </span>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
