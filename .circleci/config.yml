@@ -15,16 +15,16 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Install frontend deps (pnpm)
+          name: Ensure pnpm and install frontend deps
           command: |
             cd apps/frontend-angular
-            if command -v pnpm >/dev/null 2>&1; then
-              pnpm install --frozen-lockfile
-            else
+            # Install pnpm locally if not present to avoid global permission errors
+            if ! command -v pnpm >/dev/null 2>&1; then
+              echo "pnpm not found — installing locally via npm (no sudo)"
               npm install pnpm --no-save
-              export PATH=$(pwd)/node_modules/.bin:$PATH
-              pnpm install --frozen-lockfile
             fi
+            export PATH=$(pwd)/node_modules/.bin:$PATH
+            pnpm install --frozen-lockfile
       - run:
           name: Build frontend
           command: |
@@ -57,16 +57,16 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Install backend deps (pnpm)
+          name: Ensure pnpm and install backend deps
           command: |
             cd apps/backend
-            if command -v pnpm >/dev/null 2>&1; then
-              pnpm install --no-frozen-lockfile
-            else
+            # Install pnpm locally if not present to avoid global permission errors
+            if ! command -v pnpm >/dev/null 2>&1; then
+              echo "pnpm not found — installing locally via npm (no sudo)"
               npm install pnpm --no-save
-              export PATH=$(pwd)/node_modules/.bin:$PATH
-              pnpm install --no-frozen-lockfile
             fi
+            export PATH=$(pwd)/node_modules/.bin:$PATH
+            pnpm install --no-frozen-lockfile
       - persist_to_workspace:
           root: .
           paths:
