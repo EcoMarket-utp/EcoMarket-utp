@@ -44,8 +44,10 @@ services:
   # Backend NestJS (para desarrollo)
   backend:
     build:
-      context: ./apps/backend
-      dockerfile: Dockerfile.dev
+      # Use repository root as build context so shared lockfiles (pnpm-lock.yaml)
+      # and workspace packages are available during image build.
+      context: .
+      dockerfile: ./apps/backend/Dockerfile.dev
     container_name: ecomarket-backend-dev
     restart: unless-stopped
     environment:
@@ -57,8 +59,11 @@ services:
       - AWS_REGION=${AWS_REGION}
       - AWS_S3_BUCKET_NAME=${AWS_S3_BUCKET_NAME}
       - REDIS_URL=redis://redis:6379
-    ports:
-      - "${BACKEND_PORT:-3000}:3000"
+    # No host port mapping by default to avoid conflicts on developer machines.
+    # If you need to access the backend from the host, set BACKEND_PORT in your env file
+    # and uncomment the mapping below.
+    # ports:
+    #   - "${BACKEND_PORT:-3000}:3000"
     volumes:
       - ./apps/backend:/app
       - /app/node_modules
@@ -75,7 +80,8 @@ services:
   # Frontend Angular (para desarrollo)
   frontend:
     build:
-      context: ./apps/frontend
+      # Frontend folder in this repo is `apps/frontend-angular`.
+      context: ./apps/frontend-angular
       dockerfile: Dockerfile.dev
     container_name: ecomarket-frontend-dev
     restart: unless-stopped

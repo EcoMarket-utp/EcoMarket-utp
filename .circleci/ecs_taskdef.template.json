@@ -1,0 +1,27 @@
+{
+  "family": "ecomarket-backend-task",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "<REPLACE_WITH_EXEC_ROLE_ARN>",
+  "containerDefinitions": [
+    {
+      "name": "ecomarket-backend",
+      "image": "IMAGE_PLACEHOLDER",
+      "essential": true,
+      "portMappings": [ { "containerPort": 3002, "protocol": "tcp" } ],
+      "environment": [
+        { "name": "NODE_ENV", "value": "production" }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/ecomarket-backend",
+          "awslogs-region": "${AWS_REGION}",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}

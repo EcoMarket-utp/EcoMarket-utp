@@ -1,0 +1,12 @@
+# Ignore node modules and local files
+node_modules
+**/node_modules
+dist
+.env
+.vscode
+.git
+.DS_Store
+npm-debug.log
+pnpm-debug.log
+.idea
+coverage
