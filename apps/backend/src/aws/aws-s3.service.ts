@@ -22,7 +22,10 @@ export class AwsS3Service {
     const cmd = new PutObjectCommand({ Bucket: bucket, Key: key, ContentType: contentType });
     try {
       const url = await getSignedUrl(this.client, cmd, { expiresIn: expiresInSeconds });
-      return { url, key };
+      // Build a public URL for direct access (best-effort, depends on region and bucket settings)
+      const region = process.env.AWS_REGION || '';
+      const publicUrl = bucket && region ? `https://${bucket}.s3.${region}.amazonaws.com/${key}` : `https://${bucket}.s3.amazonaws.com/${key}`;
+      return { url, key, publicUrl, expiresIn: expiresInSeconds };
     } catch (err) {
       this.logger.error('Error generating signed URL', err as any);
       throw err;

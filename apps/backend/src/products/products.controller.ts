@@ -23,8 +23,8 @@ export class ProductsController {
     // sanitize filename to avoid path traversal and spaces
     const filenameSafe = filename.replace(/[^a-zA-Z0-9_.-]/g, '_');
     const key = `products/${Date.now()}_${filenameSafe}`;
-    const { url } = await this.aws.getUploadUrl(bucket, key, contentType);
-    return { url, key, bucket };
+    const { url, publicUrl, expiresIn } = await this.aws.getUploadUrl(bucket, key, contentType);
+    return { url, key, bucket, publicUrl, expiresIn };
   }
 
   @Post()
