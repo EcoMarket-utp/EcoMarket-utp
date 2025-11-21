@@ -3,24 +3,25 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Instalar pnpm
-RUN npm install -g pnpm
+# Usar npm para instalaciones en este Dockerfile de desarrollo para evitar
+# complicaciones con workspaces/pnpm lockfile ubicados en el root.
+RUN corepack disable || true
 
-# Copiar archivos de dependencias
-COPY package*.json ./
+# Copiar package.json del backend (estamos construyendo desde el contexto raíz)
+COPY apps/backend/package*.json ./
 COPY pnpm-lock.yaml ./
 
-# Instalar dependencias
-RUN pnpm install
+# Instalar dependencias con npm (incluye devDeps para permitir prisma generate)
+RUN npm install
 
-# Copiar código fuente
-COPY . .
+# Copiar código fuente del backend
+COPY apps/backend .
 
 # Generar cliente de Prisma
-RUN pnpm db:generate
+RUN npx prisma generate
 
-# Exponer puerto
+# Exponer puerto de desarrollo
 EXPOSE 3000
 
 # Comando de desarrollo
-CMD ["pnpm", "start:dev"]
+CMD ["npm", "run", "start:dev"]

@@ -1,55 +1,45 @@
-# Build stage
-FROM node:18-alpine AS builder
-
+### Multi-stage Dockerfile for EcoMarket backend (production)
+FROM node:20-bullseye-slim AS builder
 WORKDIR /app
 
-# Instalar pnpm o npm
-RUN npm install -g npm
+# Install pnpm globally in the builder image using npm (builder runs as root so this is safe)
+# Avoid using `corepack prepare --activate` here because in some CI/container runtimes
+# corepack tries to unlink or replace /usr/local/bin/pnpm and can fail with EACCES.
+RUN npm install -g pnpm@10.18.2
 
-# Copiar archivos de dependencias
-COPY package*.json ./
+# Copy workspace files so pnpm can install using the lockfile and workspace config
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/backend/package.json ./apps/backend/package.json
 
-# Instalar dependencias
-RUN npm ci
+# Install workspace deps (use the lockfile to produce deterministic installs)
+RUN pnpm install --frozen-lockfile
 
-# Copiar código fuente
+# Copy the rest of the repo so the Prisma schema and source files are available
 COPY . .
 
-# Generar cliente de Prisma
-RUN npm run db:generate
+# Generate the Prisma client for the backend (needs schema at apps/backend/prisma)
+# Try the package script first (`db:generate`), fallback to direct `prisma generate`.
+RUN pnpm --filter ./apps/backend... run db:generate || pnpm --filter ./apps/backend... prisma generate --schema=./apps/backend/prisma/schema.prisma
 
-# Compilar TypeScript
-RUN npm run build
+WORKDIR /app/apps/backend
+# Build TypeScript (fail loudly if compilation errors occur) and show dist contents
+RUN pnpm --filter ./apps/backend... build
+RUN echo "=== dist contents ===" && ls -la dist || true
 
-# Production stage
-FROM node:18-alpine
-
+FROM node:20-bullseye-slim AS runtime
 WORKDIR /app
 
-# Instalar pnpm
-RUN npm install -g npm
+# Create non-root user
+RUN useradd --user-group --create-home --shell /bin/false appuser
 
-# Copiar package.json
-COPY package*.json ./
+# Copy built output and node_modules for backend
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/apps/backend ./apps/backend
 
-# Instalar solo dependencias de producción
-RUN npm ci --only=production
+WORKDIR /app/apps/backend
 
-# Copiar el cliente de Prisma generado
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-
-# Copiar dist compilado
-COPY --from=builder /app/dist ./dist
-
-# Copiar migraciones de Prisma
-COPY --from=builder /app/prisma ./prisma
-
-# Exponer puerto
+ENV NODE_ENV=production
 EXPOSE 3002
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3002', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
-
-# Comando de inicio con migraciones
-CMD ["sh", "-c", "npm run db:migrate:prod && npm run start:prod"]
+USER appuser
+CMD ["node", "dist/main.js"]

@@ -7,19 +7,6 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
-
-  // CORS
-  const frontendUrl = configService.get<string>(
-    'FRONTEND_URL',
-    'http://localhost:4200',
-  );
-  app.enableCors({
-    origin: frontendUrl.split(','),
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-  });
-
   app.useGlobalPipes(
     new ValidationPipe({ whitelist: true, forbidNonWhitelisted: false }),
   );
@@ -31,11 +18,13 @@ async function bootstrap() {
     .addBearerAuth()
     .build();
   const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api/docs', app, swaggerDocument);
+  // Swagger setup does not return a promise; explicitly ignore floating-promise lint rule if any
 
+  SwaggerModule.setup('api/docs', app, swaggerDocument);
   const port = configService.get<number>('PORT', 3002);
 
-  await app.listen(port, '0.0.0.0');
+  await app.listen(port);
   console.log(`🚀 EcoMarket Backend running on port ${port}`);
 }
-bootstrap();
+// Call bootstrap and ignore the returned promise explicitly
+void bootstrap();
