@@ -7,7 +7,7 @@ import {
   IsOptional,
   IsEnum,
 } from 'class-validator';
-import { Role } from '@prisma/client';
+  // role will be assigned via `roles` and `users_roles` tables from the database
 
 export class SignupDto {
   @ApiProperty({
@@ -41,14 +41,5 @@ export class SignupDto {
   @MaxLength(50)
   lastName: string;
 
-  @ApiProperty({
-    example: 'CUSTOMER',
-    enum: Role,
-    description: 'Rol: CUSTOMER, SELLER o ADMIN',
-    required: false,
-    default: 'CUSTOMER',
-  })
-  @IsOptional()
-  @IsEnum(Role)
-  role?: Role = Role.ADMIN;
+    // role is assigned server-side, do not accept role in the signup DTO
 }
