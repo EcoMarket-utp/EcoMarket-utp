@@ -1,0 +1,285 @@
+version: 2.1
+
+executors:
+  node-exec:
+    docker:
+      # Use Node >= 20 because some dependencies (Nest 11 / Prisma) require Node >= 20
+      - image: cimg/node:20.6.0
+    working_directory: ~/repo
+
+jobs:
+  # ---------- FRONTEND: build -> sync S3 -> invalidate CloudFront ----------
+  build-and-deploy-frontend:
+    executor: node-exec
+    environment:
+      CI: true
+    steps:
+      - checkout
+      - run:
+          name: Disable corepack if present
+          command: |
+            if command -v corepack >/dev/null 2>&1; then
+              corepack disable || true
+            fi
+            # Ensure any locally installed node_modules bins will be found in later steps
+            echo 'export PATH=$PWD/node_modules/.bin:$PATH' >> $BASH_ENV
+      - run:
+          name: Ensure pnpm and install frontend deps (workspace-aware)
+          command: |
+            # Run installs from repo root and use --filter so pnpm uses the workspace lockfile
+            # Install pnpm locally if not present to avoid global permission errors
+            if ! command -v pnpm >/dev/null 2>&1; then
+              echo "pnpm not found — installing locally via npm (no sudo)"
+              npm install pnpm --no-save
+            fi
+            echo 'export PATH=$PWD/node_modules/.bin:$PATH' >> $BASH_ENV
+            # Install only deps required for the frontend package but let pnpm read the root lockfile
+            pnpm install --frozen-lockfile --filter ./apps/frontend-angular...
+      - run:
+          name: Build frontend
+          command: |
+            # Run the build for the frontend package via workspace filter
+            pnpm --filter ./apps/frontend-angular... exec ng build --configuration production
+      - run:
+          name: Ensure AWS CLI available
+          command: |
+            if ! command -v aws >/dev/null 2>&1; then
+              if command -v pip >/dev/null 2>&1; then
+                pip install --user awscli
+                export PATH=$HOME/.local/bin:$PATH
+              else
+                echo "pip not found — please ensure aws cli is available in the image" >&2
+                exit 1
+              fi
+            fi
+      - run:
+          name: Sync build to S3
+          command: |
+            aws s3 sync apps/frontend-angular/dist s3://${S3_BUCKET_FRONTEND} --delete
+      - run:
+          name: Invalidate CloudFront
+          command: |
+            aws cloudfront create-invalidation --distribution-id ${CLOUDFRONT_DISTRIBUTION_ID} --paths "/*"
+
+  # ---------- BACKEND: install deps & run prisma migrate ----------
+  install-backend:
+    executor: node-exec
+    steps:
+      - checkout
+      - run:
+          name: Disable corepack if present
+          command: |
+            if command -v corepack >/dev/null 2>&1; then
+              corepack disable || true
+            fi
+            echo 'export PATH=$PWD/node_modules/.bin:$PATH' >> $BASH_ENV
+      - run:
+          name: Ensure pnpm and install backend deps (workspace-aware)
+          command: |
+            # Install pnpm locally if not present to avoid global permission errors
+            if ! command -v pnpm >/dev/null 2>&1; then
+              echo "pnpm not found — installing locally via npm (no sudo)"
+              npm install pnpm --no-save
+            fi
+            echo 'export PATH=$PWD/node_modules/.bin:$PATH' >> $BASH_ENV
+            # Install only backend deps but let pnpm read the root lockfile
+            pnpm install --no-frozen-lockfile --filter ./apps/backend...
+      - run:
+          name: Generate Prisma client
+          command: |
+            # Generate Prisma client so @prisma/client files exist for tests/build
+            cd apps/backend
+            npx prisma generate
+      - persist_to_workspace:
+          root: .
+          paths:
+            - node_modules
+            - apps/backend
+
+  # ---------- TEST + BUILD + JAR (condicional para proyectos Java) ----------
+  test-build-jar:
+    executor: node-exec
+    environment:
+      CI: true
+    steps:
+      - checkout
+      - run:
+          name: Disable corepack if present
+          command: |
+            if command -v corepack >/dev/null 2>&1; then
+              corepack disable || true
+            fi
+            echo 'export PATH=$PWD/node_modules/.bin:$PATH' >> $BASH_ENV
+      - run:
+          name: Ensure pnpm and install backend deps (for test/build)
+          command: |
+            if ! command -v pnpm >/dev/null 2>&1; then
+              echo "pnpm not found — installing locally via npm (no sudo)"
+              npm install pnpm --no-save
+            fi
+            echo 'export PATH=$PWD/node_modules/.bin:$PATH' >> $BASH_ENV
+            pnpm install --no-frozen-lockfile --filter ./apps/backend...
+      # Prisma client is generated in the install-backend job (persisted via workspace)
+      - run:
+          name: Ensure Prisma client exists (generate if missing)
+          command: |
+            cd apps/backend
+            npx prisma generate || true
+      - run:
+          name: Run backend tests
+          command: |
+            pnpm --filter ./apps/backend... test
+      - run:
+          name: Build backend
+          command: |
+            pnpm --filter ./apps/backend... run build
+      - run:
+          name: Try to build a Java JAR if a Java project exists
+          command: |
+            if [ -f pom.xml ]; then
+              apt-get update && apt-get install -y maven
+              mvn -B package -DskipTests
+            elif [ -f gradlew ] || [ -f build.gradle ]; then
+              apt-get update && apt-get install -y default-jdk
+              chmod +x ./gradlew || true
+              if [ -f ./gradlew ]; then
+                ./gradlew build
+              else
+                gradle build
+              fi
+            else
+              echo "No Java build files found; skipping JAR generation"
+            fi
+      - run:
+          name: Collect JAR artifacts (if any)
+          command: |
+            mkdir -p /tmp/artifacts
+            # Copy common jar output locations
+            find . -type f -name '*.jar' -exec cp {} /tmp/artifacts/ \; || true
+      - store_artifacts:
+          path: /tmp/artifacts
+          destination: jars
+
+  prisma-migrate:
+    executor: node-exec
+    steps:
+      - attach_workspace:
+          at: .
+      - run:
+          name: Ensure pnpm and install backend deps (for migrate)
+          command: |
+            # Install pnpm locally if not present to avoid global permission errors
+            if ! command -v pnpm >/dev/null 2>&1; then
+              echo "pnpm not found — installing locally via npm (no sudo)"
+              npm install pnpm --no-save
+            fi
+            echo 'export PATH=$PWD/node_modules/.bin:$PATH' >> $BASH_ENV
+            # Install only backend deps (no-frozen to avoid lockfile issues in CI)
+            pnpm install --no-frozen-lockfile --filter ./apps/backend...
+      - run:
+          name: Run Prisma migrations (deploy)
+          command: |
+            cd apps/backend
+            # DATABASE_URL must estar en Environment Variables de CircleCI
+            npx prisma migrate deploy
+
+  # ---------- BACKEND: build docker, push to ECR ----------
+  build-and-push-image:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: Ensure AWS CLI available
+          command: |
+            if ! command -v aws >/dev/null 2>&1; then
+              if command -v pip >/dev/null 2>&1; then
+                pip install --user awscli
+                export PATH=$HOME/.local/bin:$PATH
+              else
+                echo "pip not found — please ensure aws cli is available in the image" >&2
+                exit 1
+              fi
+            fi
+      - run:
+          name: Login to ECR
+          command: |
+            aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+      - run:
+          name: Create ECR repo if missing
+          command: |
+            if ! aws ecr describe-repositories --repository-names ${ECR_REPOSITORY_NAME} --region ${AWS_REGION} >/dev/null 2>&1; then
+              aws ecr create-repository --repository-name ${ECR_REPOSITORY_NAME} --region ${AWS_REGION}
+            else
+              echo "ECR repo ${ECR_REPOSITORY_NAME} exists"
+            fi
+      - run:
+          name: Build, tag and push image
+          command: |
+            IMAGE_TAG=circleci-${CIRCLE_SHA1}
+            IMAGE_NAME=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY_NAME}:${IMAGE_TAG}
+            docker build -t ${ECR_REPOSITORY_NAME}:${IMAGE_TAG} -f apps/backend/Dockerfile .
+            docker tag ${ECR_REPOSITORY_NAME}:${IMAGE_TAG} ${IMAGE_NAME}
+            docker push ${IMAGE_NAME}
+
+  # ---------- DEPLOY to ECS (actualiza task definition & service) ----------
+  deploy-to-ecs:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      - run:
+          name: Ensure AWS CLI available
+          command: |
+            if ! command -v aws >/dev/null 2>&1; then
+              if command -v pip >/dev/null 2>&1; then
+                pip install --user awscli
+                export PATH=$HOME/.local/bin:$PATH
+              else
+                echo "pip not found — please ensure aws cli is available in the image" >&2
+                exit 1
+              fi
+            fi
+      - run:
+          name: Register task definition (replace IMAGE_PLACEHOLDER)
+          command: |
+            IMAGE=${ECR_REPOSITORY_URI}:circleci-${CIRCLE_SHA1}
+            sed "s|IMAGE_PLACEHOLDER|${IMAGE}|g" .circleci/ecs_taskdef.template.json > /tmp/taskdef.json
+            aws ecs register-task-definition --cli-input-json file:///tmp/taskdef.json --region ${AWS_REGION}
+      - run:
+          name: Update ECS service (force new deployment)
+          command: |
+            aws ecs update-service --cluster ${ECS_CLUSTER_NAME} --service ${ECS_SERVICE_NAME} --force-new-deployment --region ${AWS_REGION}
+
+workflows:
+  build-and-deploy:
+    jobs:
+      - build-and-deploy-frontend
+      - install-backend
+      - test-build-jar:
+          requires:
+            - install-backend
+      - prisma-migrate:
+          requires:
+            - test-build-jar
+      - build-and-push-image:
+          requires:
+            - prisma-migrate
+      - deploy-to-ecs:
+          requires:
+            - build-and-push-image
+
+# Variables obligatorias (configurar en Project Settings > Environment Variables):
+# - AWS_ACCESS_KEY_ID
+# - AWS_SECRET_ACCESS_KEY
+# - AWS_REGION (ej. us-east-1)
+# - AWS_ACCOUNT_ID
+# - ECR_REPOSITORY_NAME (ej. ecomarket-backend)
+# - ECR_REPOSITORY_URI (ej. <account>.dkr.ecr.<region>.amazonaws.com/ecomarket-backend)
+# - ECS_CLUSTER_NAME
+# - ECS_SERVICE_NAME
+# - ECS_TASK_FAMILY
+# - S3_BUCKET_FRONTEND
+# - CLOUDFRONT_DISTRIBUTION_ID
+
