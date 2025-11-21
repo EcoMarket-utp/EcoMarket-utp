@@ -1,75 +1,54 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Put,
-  Delete,
-  Param,
-  Body,
-  Query,
-  UseGuards,
-  Request,
-} from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { ProductsService } from './products.service';
+import { Controller, Get, Post, Body, Param, Put, Delete } from '@nestjs/common';
 import { CreateProductDto } from './dto/create-product.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
+import { ProductsService } from './products.service';
+import { AwsS3Service } from '../aws/aws-s3.service';
 
-@ApiTags('products')
+class UploadUrlDto {
+  filename!: string;
+  contentType?: string;
+}
+
 @Controller('products')
 export class ProductsController {
-  constructor(private readonly productsService: ProductsService) {}
+  constructor(private readonly productsService: ProductsService, private readonly aws: AwsS3Service) {}
+
+  @Post('upload-url')
+  async getUploadUrl(@Body() body: UploadUrlDto) {
+    const bucket = process.env.AWS_S3_BUCKET_NAME || process.env.AWS_S3_BUCKET || process.env.AWS_S3_BUCKET_NAME || '';
+    if (!bucket) {
+      throw new Error('AWS_S3_BUCKET_NAME is not configured in environment');
+    }
+    const filename = body.filename ?? 'file';
+    const contentType = body.contentType || 'application/octet-stream';
+    // sanitize filename to avoid path traversal and spaces
+    const filenameSafe = filename.replace(/[^a-zA-Z0-9_.-]/g, '_');
+    const key = `products/${Date.now()}_${filenameSafe}`;
+    const { url, publicUrl, expiresIn } = await this.aws.getUploadUrl(bucket, key, contentType);
+    return { url, key, bucket, publicUrl, expiresIn };
+  }
 
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('SELLER', 'ADMIN')
-  @ApiBearerAuth()
-  create(@Body() dto: CreateProductDto, @Request() req: any) {
-    return this.productsService.create(dto, req.user.userId);
+  async create(@Body() data: CreateProductDto) {
+    return this.productsService.create(data);
   }
 
   @Get()
-  findAll(@Query('skip') skip = 0, @Query('take') take = 10) {
-    return this.productsService.findAll(Number(skip), Number(take));
-  }
-
-  @Get('category/:categoryId')
-  findByCategory(
-    @Param('categoryId') categoryId: string,
-    @Query('skip') skip = 0,
-    @Query('take') take = 10,
-  ) {
-    return this.productsService.findByCategory(
-      categoryId,
-      Number(skip),
-      Number(take),
-    );
+  async findAll() {
+    return this.productsService.findAll();
   }
 
   @Get(':id')
-  findById(@Param('id') id: string) {
-    return this.productsService.findById(id);
+  async findOne(@Param('id') id: string) {
+    return this.productsService.findOne(id);
   }
 
   @Put(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('SELLER', 'ADMIN')
-  @ApiBearerAuth()
-  update(
-    @Param('id') id: string,
-    @Body() dto: Partial<CreateProductDto>,
-    @Request() req: any,
-  ) {
-    return this.productsService.update(id, dto, req.user.userId);
+  async update(@Param('id') id: string, @Body() data: Partial<CreateProductDto>) {
+    return this.productsService.update(id, data);
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('SELLER', 'ADMIN')
-  @ApiBearerAuth()
-  delete(@Param('id') id: string, @Request() req: any) {
-    return this.productsService.delete(id, req.user.userId);
+  async remove(@Param('id') id: string) {
+    return this.productsService.remove(id);
   }
 }
