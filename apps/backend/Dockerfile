@@ -22,8 +22,9 @@ COPY . .
 RUN pnpm --filter ./apps/backend... run db:generate || pnpm --filter ./apps/backend... prisma generate --schema=./apps/backend/prisma/schema.prisma
 
 WORKDIR /app/apps/backend
-# Build TypeScript (if you have a build step)
-RUN pnpm --filter ./apps/backend... build || echo "no build script"
+# Build TypeScript (fail loudly if compilation errors occur) and show dist contents
+RUN pnpm --filter ./apps/backend... build
+RUN echo "=== dist contents ===" && ls -la dist || true
 
 FROM node:20-bullseye-slim AS runtime
 WORKDIR /app
