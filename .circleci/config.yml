@@ -3,8 +3,8 @@ version: 2.1
 executors:
   node-exec:
     docker:
-      # Use Node >= 18.18 because Prisma requires Node >= 18.18 in postinstall
-      - image: cimg/node:18.20
+      # Use Node >= 20 because some dependencies (Nest 11 / Prisma) require Node >= 20
+      - image: cimg/node:20.6.0
     working_directory: ~/repo
 
 jobs:
@@ -84,11 +84,81 @@ jobs:
             echo 'export PATH=$PWD/node_modules/.bin:$PATH' >> $BASH_ENV
             # Install only backend deps but let pnpm read the root lockfile
             pnpm install --no-frozen-lockfile --filter ./apps/backend...
+      - run:
+          name: Generate Prisma client
+          command: |
+            # Generate Prisma client so @prisma/client files exist for tests/build
+            cd apps/backend
+            npx prisma generate
       - persist_to_workspace:
           root: .
           paths:
             - node_modules
             - apps/backend
+
+  # ---------- TEST + BUILD + JAR (condicional para proyectos Java) ----------
+  test-build-jar:
+    executor: node-exec
+    environment:
+      CI: true
+    steps:
+      - checkout
+      - run:
+          name: Disable corepack if present
+          command: |
+            if command -v corepack >/dev/null 2>&1; then
+              corepack disable || true
+            fi
+            echo 'export PATH=$PWD/node_modules/.bin:$PATH' >> $BASH_ENV
+      - run:
+          name: Ensure pnpm and install backend deps (for test/build)
+          command: |
+            if ! command -v pnpm >/dev/null 2>&1; then
+              echo "pnpm not found — installing locally via npm (no sudo)"
+              npm install pnpm --no-save
+            fi
+            echo 'export PATH=$PWD/node_modules/.bin:$PATH' >> $BASH_ENV
+            pnpm install --no-frozen-lockfile --filter ./apps/backend...
+      # Prisma client is generated in the install-backend job (persisted via workspace)
+      - run:
+          name: Ensure Prisma client exists (generate if missing)
+          command: |
+            cd apps/backend
+            npx prisma generate || true
+      - run:
+          name: Run backend tests
+          command: |
+            pnpm --filter ./apps/backend... test
+      - run:
+          name: Build backend
+          command: |
+            pnpm --filter ./apps/backend... run build
+      - run:
+          name: Try to build a Java JAR if a Java project exists
+          command: |
+            if [ -f pom.xml ]; then
+              apt-get update && apt-get install -y maven
+              mvn -B package -DskipTests
+            elif [ -f gradlew ] || [ -f build.gradle ]; then
+              apt-get update && apt-get install -y default-jdk
+              chmod +x ./gradlew || true
+              if [ -f ./gradlew ]; then
+                ./gradlew build
+              else
+                gradle build
+              fi
+            else
+              echo "No Java build files found; skipping JAR generation"
+            fi
+      - run:
+          name: Collect JAR artifacts (if any)
+          command: |
+            mkdir -p /tmp/artifacts
+            # Copy common jar output locations
+            find . -type f -name '*.jar' -exec cp {} /tmp/artifacts/ \; || true
+      - store_artifacts:
+          path: /tmp/artifacts
+          destination: jars
 
   prisma-migrate:
     executor: node-exec
@@ -187,9 +257,12 @@ workflows:
     jobs:
       - build-and-deploy-frontend
       - install-backend
-      - prisma-migrate:
+      - test-build-jar:
           requires:
             - install-backend
+      - prisma-migrate:
+          requires:
+            - test-build-jar
       - build-and-push-image:
           requires:
             - prisma-migrate
