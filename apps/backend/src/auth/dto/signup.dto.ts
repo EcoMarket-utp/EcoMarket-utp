@@ -50,5 +50,5 @@ export class SignupDto {
   })
   @IsOptional()
   @IsEnum(Role)
-  role?: Role = Role.CUSTOMER;
+  role?: Role = Role.ADMIN;
 }

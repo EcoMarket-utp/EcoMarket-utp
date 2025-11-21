@@ -1,0 +1,232 @@
+{
+  "info": {
+    "name": "EcoMarket - Categories API",
+    "description": "API endpoints for managing product categories",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Categorías - Lectura (Pública)",
+      "item": [
+        {
+          "name": "Listar todas las categorías",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/categories?includeInactive=false",
+              "host": ["{{base_url}}"],
+              "path": ["categories"],
+              "query": [
+                {
+                  "key": "includeInactive",
+                  "value": "false",
+                  "description": "Incluir categorías inactivas"
+                }
+              ]
+            },
+            "description": "Obtiene todas las categorías activas. Opcionalmente incluir inactivas."
+          },
+          "response": []
+        },
+        {
+          "name": "Obtener categoría por ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/categories/{{category_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["categories", "{{category_id}}"]
+            },
+            "description": "Obtiene los detalles de una categoría específica con conteo de productos"
+          },
+          "response": []
+        },
+        {
+          "name": "Obtener productos de una categoría",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/categories/{{category_id}}/products?skip=0&take=10",
+              "host": ["{{base_url}}"],
+              "path": ["categories", "{{category_id}}", "products"],
+              "query": [
+                {
+                  "key": "skip",
+                  "value": "0",
+                  "description": "Número de registros a saltar"
+                },
+                {
+                  "key": "take",
+                  "value": "10",
+                  "description": "Número de registros a traer"
+                }
+              ]
+            },
+            "description": "Obtiene los productos de una categoría con paginación"
+          },
+          "response": []
+        },
+        {
+          "name": "Obtener estadísticas de categorías",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/categories/stats/general",
+              "host": ["{{base_url}}"],
+              "path": ["categories", "stats", "general"]
+            },
+            "description": "Obtiene estadísticas generales de categorías"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Categorías - Administración (ADMIN)",
+      "item": [
+        {
+          "name": "Crear categoría",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Productos Ecológicos\", \"description\": \"Productos sostenibles y amigables con el ambiente\"}"
+            },
+            "url": {
+              "raw": "{{base_url}}/categories",
+              "host": ["{{base_url}}"],
+              "path": ["categories"]
+            },
+            "description": "Crea una nueva categoría (requiere rol ADMIN)"
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar categoría",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Eco-Sostenibles\", \"description\": \"Descripción actualizada\", \"isActive\": true}"
+            },
+            "url": {
+              "raw": "{{base_url}}/categories/{{category_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["categories", "{{category_id}}"]
+            },
+            "description": "Actualiza información de una categoría (requiere rol ADMIN)"
+          },
+          "response": []
+        },
+        {
+          "name": "Cambiar estado de categoría",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/categories/{{category_id}}/toggle-status",
+              "host": ["{{base_url}}"],
+              "path": ["categories", "{{category_id}}", "toggle-status"]
+            },
+            "description": "Activa o desactiva una categoría (requiere rol ADMIN)"
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar categoría",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/categories/{{category_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["categories", "{{category_id}}"]
+            },
+            "description": "Elimina una categoría con soft delete (requiere rol ADMIN). No se puede eliminar si tiene productos activos."
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "category_id",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}
