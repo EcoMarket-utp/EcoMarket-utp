@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { ValidationPipe } from '@nestjs/common';
+import { BigIntToStringInterceptor } from './common/interceptors/bigint-to-string.interceptor';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 
@@ -10,6 +11,9 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({ whitelist: true, forbidNonWhitelisted: false }),
   );
+
+  // Convert BigInt values to strings in all responses to avoid JSON serialization errors
+  app.useGlobalInterceptors(new BigIntToStringInterceptor());
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('EcoMarket API')

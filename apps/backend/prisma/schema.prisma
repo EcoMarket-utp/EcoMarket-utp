@@ -7,6 +7,70 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model audit_logs {
+  id          BigInt   @id @default(autoincrement())
+  user_id     BigInt?
+  action      String   @db.VarChar(100)
+  entity_type String   @db.VarChar(50)
+  entity_id   BigInt?
+  old_values  Json?
+  new_values  Json?
+  ip_address  String?  @db.Inet
+  user_agent  String?
+  created_at  DateTime @default(now()) @db.Timestamp(6)
+  users       users?   @relation(fields: [user_id], references: [id], onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model cart_items {
+  id               BigInt            @id @default(autoincrement())
+  cart_id          BigInt
+  product_id       BigInt
+  variant_id       BigInt?
+  quantity         Int
+  unit_price       Decimal           @db.Decimal(10, 2)
+  created_at       DateTime          @default(now()) @db.Timestamp(6)
+  updated_at       DateTime          @default(now()) @db.Timestamp(6)
+  carts            carts             @relation(fields: [cart_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  products         products          @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  product_variants product_variants? @relation(fields: [variant_id], references: [id], onUpdate: NoAction)
+
+  @@unique([cart_id, product_id, variant_id])
+  @@index([cart_id], map: "idx_cart_items_cart")
+  @@index([product_id], map: "idx_cart_items_product")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model carts {
+  id         BigInt       @id @default(autoincrement())
+  user_id    BigInt?      @unique
+  session_id String?      @unique @db.VarChar(255)
+  created_at DateTime     @default(now()) @db.Timestamp(6)
+  updated_at DateTime     @default(now()) @db.Timestamp(6)
+  cart_items cart_items[]
+  users      users?       @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model categories {
+  id               BigInt       @id @default(autoincrement())
+  name             String       @unique @db.VarChar(100)
+  slug             String       @unique @db.VarChar(120)
+  description      String?
+  image_url        String?      @db.VarChar(500)
+  parent_id        BigInt?
+  is_active        Boolean?     @default(true)
+  sort_order       Int?         @default(0)
+  created_at       DateTime     @default(now()) @db.Timestamp(6)
+  updated_at       DateTime     @default(now()) @db.Timestamp(6)
+  categories       categories?  @relation("categoriesTocategories", fields: [parent_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  other_categories categories[] @relation("categoriesTocategories")
+  products         products[]
+
+  @@index([is_active], map: "idx_categories_active")
+  @@index([parent_id], map: "idx_categories_parent")
+}
+
 model coupon_usages {
   id              BigInt   @id @default(autoincrement())
   coupon_id       BigInt
@@ -15,8 +79,8 @@ model coupon_usages {
   discount_amount Decimal  @db.Decimal(10, 2)
   used_at         DateTime @default(now()) @db.Timestamp(6)
   coupons         coupons  @relation(fields: [coupon_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  orders          Order?   @relation(fields: [order_id], references: [id], onUpdate: NoAction)
-  users           User     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  orders          orders?  @relation(fields: [order_id], references: [id], onUpdate: NoAction)
+  users           users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([coupon_id, user_id, order_id])
 }
@@ -69,8 +133,8 @@ model inventory_movements {
   notes            String?
   created_by       BigInt?
   created_at       DateTime          @default(now()) @db.Timestamp(6)
-  users            User?             @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  products         Product           @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users            users?            @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  products         products          @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   product_variants product_variants? @relation(fields: [variant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
@@ -85,11 +149,69 @@ model notifications {
   is_read    Boolean?  @default(false)
   read_at    DateTime? @db.Timestamp(6)
   created_at DateTime  @default(now()) @db.Timestamp(6)
-  users      User      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([created_at], map: "idx_notifications_created_at")
   @@index([is_read], map: "idx_notifications_read")
   @@index([user_id], map: "idx_notifications_user")
+}
+
+model order_items {
+  id               BigInt            @id @default(autoincrement())
+  order_id         BigInt
+  product_id       BigInt
+  variant_id       BigInt?
+  product_name     String            @db.VarChar(255)
+  product_sku      String?           @db.VarChar(100)
+  unit_price       Decimal           @db.Decimal(10, 2)
+  quantity         Int
+  total_price      Decimal           @db.Decimal(10, 2)
+  created_at       DateTime          @default(now()) @db.Timestamp(6)
+  orders           orders            @relation(fields: [order_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  products         products          @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  product_variants product_variants? @relation(fields: [variant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  product_reviews  product_reviews[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model orders {
+  id                                                        BigInt          @id @default(autoincrement())
+  order_number                                              String          @unique @db.VarChar(50)
+  user_id                                                   BigInt
+  status                                                    String          @default("pending") @db.VarChar(50)
+  payment_status                                            String          @default("pending") @db.VarChar(50)
+  shipping_status                                           String          @default("not_shipped") @db.VarChar(50)
+  subtotal                                                  Decimal         @db.Decimal(10, 2)
+  tax_amount                                                Decimal?        @default(0) @db.Decimal(10, 2)
+  shipping_amount                                           Decimal?        @default(0) @db.Decimal(10, 2)
+  discount_amount                                           Decimal?        @default(0) @db.Decimal(10, 2)
+  total_amount                                              Decimal         @db.Decimal(10, 2)
+  currency                                                  String?         @default("COP") @db.VarChar(3)
+  payment_method                                            String?         @db.VarChar(50)
+  payment_reference                                         String?         @db.VarChar(255)
+  shipping_address_id                                       BigInt?
+  billing_address_id                                        BigInt?
+  notes                                                     String?
+  ordered_at                                                DateTime        @default(now()) @db.Timestamp(6)
+  shipped_at                                                DateTime?       @db.Timestamp(6)
+  delivered_at                                              DateTime?       @db.Timestamp(6)
+  cancelled_at                                              DateTime?       @db.Timestamp(6)
+  created_at                                                DateTime        @default(now()) @db.Timestamp(6)
+  updated_at                                                DateTime        @default(now()) @db.Timestamp(6)
+  coupon_usages                                             coupon_usages[]
+  order_items                                               order_items[]
+  user_addresses_orders_billing_address_idTouser_addresses  user_addresses? @relation("orders_billing_address_idTouser_addresses", fields: [billing_address_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user_addresses_orders_shipping_address_idTouser_addresses user_addresses? @relation("orders_shipping_address_idTouser_addresses", fields: [shipping_address_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users                                                     users           @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([ordered_at], map: "idx_orders_date_range")
+  @@index([ordered_at], map: "idx_orders_ordered_at")
+  @@index([payment_status], map: "idx_orders_payment_status")
+  @@index([status], map: "idx_orders_status")
+  @@index([total_amount], map: "idx_orders_total_amount")
+  @@index([user_id], map: "idx_orders_user")
+  @@index([user_id, status], map: "idx_orders_user_status")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -106,7 +228,7 @@ model product_eco_attributes {
   manufacturing_country String?  @db.VarChar(100)
   sustainability_score  Int?
   created_at            DateTime @default(now()) @db.Timestamp(6)
-  products              Product  @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  products              products @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 }
 
 model product_images {
@@ -117,7 +239,7 @@ model product_images {
   sort_order Int?     @default(0)
   is_primary Boolean? @default(false)
   created_at DateTime @default(now()) @db.Timestamp(6)
-  products   Product  @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  products   products @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -135,9 +257,9 @@ model product_reviews {
   helpful_votes        Int?               @default(0)
   created_at           DateTime           @default(now()) @db.Timestamp(6)
   updated_at           DateTime           @default(now()) @db.Timestamp(6)
-  order_items          OrderItem?         @relation(fields: [order_item_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  products             Product            @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users                User               @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  order_items          order_items?       @relation(fields: [order_item_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  products             products           @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users                users              @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   review_responses     review_responses[]
 
   @@unique([product_id, user_id, order_item_id])
@@ -156,7 +278,7 @@ model product_suppliers {
   lead_time_days Int?
   is_primary     Boolean?  @default(false)
   created_at     DateTime  @default(now()) @db.Timestamp(6)
-  products       Product   @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  products       products  @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   suppliers      suppliers @relation(fields: [supplier_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([product_id, supplier_id])
@@ -172,10 +294,10 @@ model product_variants {
   attributes          Json
   is_active           Boolean?              @default(true)
   created_at          DateTime              @default(now()) @db.Timestamp(6)
-  cart_items          CartItem[]
+  cart_items          cart_items[]
   inventory_movements inventory_movements[]
-  order_items         OrderItem[]
-  products            Product               @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  order_items         order_items[]
+  products            products              @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 }
 
 model product_views {
@@ -186,8 +308,55 @@ model product_views {
   ip_address String?  @db.Inet
   user_agent String?
   viewed_at  DateTime @default(now()) @db.Timestamp(6)
-  products   Product  @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users      User?    @relation(fields: [user_id], references: [id], onUpdate: NoAction)
+  products   products @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users      users?   @relation(fields: [user_id], references: [id], onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model products {
+  id                     BigInt                   @id @default(autoincrement())
+  name                   String                   @db.VarChar(255)
+  slug                   String                   @unique @db.VarChar(280)
+  description            String?
+  short_description      String?                  @db.VarChar(500)
+  sku                    String?                  @unique @db.VarChar(100)
+  price                  Decimal                  @db.Decimal(10, 2)
+  compare_price          Decimal?                 @db.Decimal(10, 2)
+  cost_price             Decimal?                 @db.Decimal(10, 2)
+  stock_quantity         Int                      @default(0)
+  low_stock_threshold    Int?                     @default(10)
+  is_active              Boolean?                 @default(true)
+  is_featured            Boolean?                 @default(false)
+  is_digital             Boolean?                 @default(false)
+  weight                 Decimal?                 @db.Decimal(8, 3)
+  dimensions             Json?
+  category_id            BigInt?
+  brand                  String?                  @db.VarChar(100)
+  tags                   String[]
+  seo_title              String?                  @db.VarChar(255)
+  seo_description        String?                  @db.VarChar(500)
+  created_at             DateTime                 @default(now()) @db.Timestamp(6)
+  updated_at             DateTime                 @default(now()) @db.Timestamp(6)
+  cart_items             cart_items[]
+  inventory_movements    inventory_movements[]
+  order_items            order_items[]
+  product_eco_attributes product_eco_attributes[]
+  product_images         product_images[]
+  product_reviews        product_reviews[]
+  product_suppliers      product_suppliers[]
+  product_variants       product_variants[]
+  product_views          product_views[]
+  categories             categories?              @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  wishlist_items         wishlist_items[]
+
+  @@index([is_active], map: "idx_products_active")
+  @@index([category_id], map: "idx_products_category")
+  @@index([created_at], map: "idx_products_created_at")
+  @@index([is_featured], map: "idx_products_featured")
+  @@index([price], map: "idx_products_price")
+  @@index([sku], map: "idx_products_sku")
+  @@index([slug], map: "idx_products_slug")
 }
 
 model review_responses {
@@ -197,7 +366,7 @@ model review_responses {
   response        String
   created_at      DateTime        @default(now()) @db.Timestamp(6)
   product_reviews product_reviews @relation(fields: [review_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users           User            @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users           users           @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model roles {
@@ -216,7 +385,7 @@ model search_queries {
   filters      Json?
   result_count Int?
   searched_at  DateTime @default(now()) @db.Timestamp(6)
-  users        User?    @relation(fields: [user_id], references: [id], onUpdate: NoAction)
+  users        users?   @relation(fields: [user_id], references: [id], onUpdate: NoAction)
 }
 
 model suppliers {
@@ -246,9 +415,45 @@ model user_addresses {
   phone                                             String?  @db.VarChar(20)
   created_at                                        DateTime @default(now()) @db.Timestamp(6)
   updated_at                                        DateTime @default(now()) @db.Timestamp(6)
-  orders_orders_billing_address_idTouser_addresses  Order[]  @relation("orders_billing_address_idTouser_addresses")
-  orders_orders_shipping_address_idTouser_addresses Order[]  @relation("orders_shipping_address_idTouser_addresses")
-  users                                             User     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  orders_orders_billing_address_idTouser_addresses  orders[] @relation("orders_billing_address_idTouser_addresses")
+  orders_orders_shipping_address_idTouser_addresses orders[] @relation("orders_shipping_address_idTouser_addresses")
+  users                                             users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model users {
+  id                                         BigInt                @id @default(autoincrement())
+  username                                   String                @unique @db.VarChar(50)
+  email                                      String                @unique @db.VarChar(255)
+  password                                   String                @db.VarChar(255)
+  first_name                                 String?               @db.VarChar(100)
+  last_name                                  String?               @db.VarChar(100)
+  phone                                      String?               @db.VarChar(20)
+  avatar_url                                 String?               @db.VarChar(500)
+  email_verified                             Boolean?              @default(false)
+  phone_verified                             Boolean?              @default(false)
+  is_active                                  Boolean?              @default(true)
+  last_login_at                              DateTime?             @db.Timestamp(6)
+  created_at                                 DateTime              @default(now()) @db.Timestamp(6)
+  updated_at                                 DateTime              @default(now()) @db.Timestamp(6)
+  audit_logs                                 audit_logs[]
+  carts                                      carts?
+  coupon_usages                              coupon_usages[]
+  inventory_movements                        inventory_movements[]
+  notifications                              notifications[]
+  orders                                     orders[]
+  product_reviews                            product_reviews[]
+  product_views                              product_views[]
+  review_responses                           review_responses[]
+  search_queries                             search_queries[]
+  user_addresses                             user_addresses[]
+  users_roles_users_roles_assigned_byTousers users_roles[]         @relation("users_roles_assigned_byTousers")
+  users_roles_users_roles_user_idTousers     users_roles[]         @relation("users_roles_user_idTousers")
+  wishlists                                  wishlists[]
+
+  @@index([is_active], map: "idx_users_active")
+  @@index([email], map: "idx_users_email")
+  @@index([username], map: "idx_users_username")
 }
 
 model users_roles {
@@ -256,9 +461,9 @@ model users_roles {
   role_id                              BigInt
   assigned_at                          DateTime @default(now()) @db.Timestamp(6)
   assigned_by                          BigInt?
-  users_users_roles_assigned_byTousers User?    @relation("users_roles_assigned_byTousers", fields: [assigned_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_users_roles_assigned_byTousers users?   @relation("users_roles_assigned_byTousers", fields: [assigned_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
   roles                                roles    @relation(fields: [role_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users_users_roles_user_idTousers     User     @relation("users_roles_user_idTousers", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_users_roles_user_idTousers     users    @relation("users_roles_user_idTousers", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@id([user_id, role_id])
 }
@@ -268,7 +473,7 @@ model wishlist_items {
   wishlist_id BigInt
   product_id  BigInt
   added_at    DateTime  @default(now()) @db.Timestamp(6)
-  products    Product   @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  products    products  @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   wishlists   wishlists @relation(fields: [wishlist_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([wishlist_id, product_id])
@@ -283,7 +488,7 @@ model wishlists {
   created_at     DateTime         @default(now()) @db.Timestamp(6)
   updated_at     DateTime         @default(now()) @db.Timestamp(6)
   wishlist_items wishlist_items[]
-  users          User             @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users          users            @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([user_id, name])
 }

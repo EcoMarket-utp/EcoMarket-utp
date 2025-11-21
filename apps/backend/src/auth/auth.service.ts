@@ -19,7 +19,7 @@ export class AuthService {
 
   async signup(dto: SignupDto) {
     // Verificar si el email ya existe
-    const existingUser = await this.prisma.user.findUnique({
+    const existingUser = await this.prisma.users.findUnique({
       where: { email: dto.email },
     });
 
@@ -31,30 +31,38 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(dto.password, 10);
 
     // Crear usuario con datos completos y rol dinámico
-    const user = await this.prisma.user.create({
+    const user = await this.prisma.users.create({
       data: {
         email: dto.email,
         password: hashedPassword,
-        firstName: dto.firstName,
-        lastName: dto.lastName,
-        role: dto.role ?? 'CUSTOMER',
-        isActive: true,
+        username: dto.email.split('@')[0],
+        first_name: dto.firstName,
+        last_name: dto.lastName,
+        is_active: true,
       },
     });
 
     // Generar JWT
-    const payload = { sub: user.id, email: user.email, role: user.role };
+    const payload = { sub: user.id.toString(), email: user.email };
     const token = this.jwtService.sign(payload);
 
     // Devolver usuario sin password y token
+    // Asignar rol por defecto usando la tabla `roles` y la relación `users_roles`
+    const roleName = 'ROLE_USER';
+    let role = await this.prisma.roles.findUnique({ where: { name: roleName } });
+    if (!role) {
+      role = await this.prisma.roles.create({ data: { name: roleName, description: 'Default user role' } });
+    }
+
+    await this.prisma.users_roles.create({ data: { user_id: user.id, role_id: role.id } });
+
     return {
       user: {
-        id: user.id,
+        id: user.id.toString(),
         email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role,
-        isActive: user.isActive,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        isActive: user.is_active,
       },
       token,
       message: 'Usuario registrado exitosamente',
@@ -63,11 +71,11 @@ export class AuthService {
 
   async login(dto: LoginDto) {
     // Buscar usuario por email
-    const user = await this.prisma.user.findUnique({
+    const user = await this.prisma.users.findUnique({
       where: { email: dto.email },
     });
 
-    if (!user?.isActive) {
+    if (!user?.is_active) {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
@@ -78,17 +86,16 @@ export class AuthService {
     }
 
     // Generar JWT
-    const payload = { sub: user.id, email: user.email, role: user.role };
+    const payload = { sub: user.id.toString(), email: user.email };
     const token = this.jwtService.sign(payload);
 
     return {
       user: {
-        id: user.id,
+        id: user.id.toString(),
         email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role,
-        isActive: user.isActive,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        isActive: user.is_active,
       },
       token,
       message: 'Login exitoso',
