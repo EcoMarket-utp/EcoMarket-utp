@@ -1,0 +1,6 @@
+<div class="spinner-wrapper" [class.fullscreen]="fullScreen">
+  <div class="spinner" [ngClass]="'spinner-' + size">
+    <div class="spinner-ring"></div>
+  </div>
+  <p *ngIf="message" class="spinner-message">{{ message }}</p>
+</div>

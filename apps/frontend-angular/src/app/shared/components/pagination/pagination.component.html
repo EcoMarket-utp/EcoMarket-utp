@@ -1,0 +1,65 @@
+<div class="pagination">
+  <!-- Info -->
+  <div class="pagination-info">
+    Mostrando {{ (currentPage - 1) * pageSize + 1 }} -
+    {{ Math.min(currentPage * pageSize, totalItems) }} de {{ totalItems }}
+  </div>
+
+  <!-- Controls -->
+  <div class="pagination-controls">
+    <!-- Previous Button -->
+    <button
+      class="pagination-btn"
+      [disabled]="currentPage === 1"
+      (click)="previousPage()"
+      title="Página anterior"
+    >
+      ← Anterior
+    </button>
+
+    <!-- First Page -->
+    <button
+      class="pagination-btn"
+      [class.active]="currentPage === 1"
+      (click)="goToPage(1)"
+    >
+      1
+    </button>
+
+    <!-- Previous Ellipsis -->
+    <span class="pagination-ellipsis" *ngIf="showPreviousEllipsis">...</span>
+
+    <!-- Page Numbers -->
+    <button
+      *ngFor="let page of pages"
+      class="pagination-btn"
+      [class.active]="currentPage === page"
+      (click)="goToPage(page)"
+    >
+      {{ page }}
+    </button>
+
+    <!-- Next Ellipsis -->
+    <span class="pagination-ellipsis" *ngIf="showNextEllipsis">...</span>
+
+    <!-- Last Page -->
+    <button
+      *ngIf="totalPages > 1"
+      class="pagination-btn"
+      [class.active]="currentPage === totalPages"
+      (click)="goToPage(totalPages)"
+    >
+      {{ totalPages }}
+    </button>
+
+    <!-- Next Button -->
+    <button
+      class="pagination-btn"
+      [disabled]="currentPage === totalPages"
+      (click)="nextPage()"
+      title="Próxima página"
+    >
+      Siguiente →
+    </button>
+  </div>
+</div>
