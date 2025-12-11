@@ -9,8 +9,8 @@ version: 2.1
 executors:
   node-executor:
     docker:
-      # Imagen oficial de CircleCI para Node.js con navegadores y SSH incluidos
-      - image: cimg/node:20-browsers
+      # Imagen oficial de CircleCI para Node.js 20 con navegadores y SSH incluidos
+      - image: cimg/node:20.10-browsers
     working_directory: ~/repo
     environment:
       # Variables globales de ambiente
