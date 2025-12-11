@@ -287,95 +287,68 @@ jobs:
 
 workflows:
   # ============================================================================
-  # WORKFLOW: Main - Rama de producción
-  # Ejecución: Tests, Linting, Build, Seguridad
+  # WORKFLOW: All Branches - Execute on all branches
   # ============================================================================
-  ci-main:
+  ci:
     jobs:
-      # Validación de código
-      - lint-frontend
-      - lint-backend
+      # Validation - Frontend
+      - lint-frontend:
+          filters:
+            branches:
+              only: /.*/
       
-      # Build
+      # Validation - Backend
+      - lint-backend:
+          filters:
+            branches:
+              only: /.*/
+      
+      # Build Frontend
       - build-frontend:
           requires:
             - lint-frontend
+          filters:
+            branches:
+              only: /.*/
       
-      # Setup y tests
+      # Setup Backend
       - setup-backend:
           requires:
             - lint-backend
+          filters:
+            branches:
+              only: /.*/
+      
+      # Test Backend
       - test-backend:
           requires:
             - setup-backend
+          filters:
+            branches:
+              only: /.*/
+      
+      # Build Backend
       - build-backend:
           requires:
             - test-backend
+          filters:
+            branches:
+              only: /.*/
       
-      # Seguridad
+      # Security Audit
       - security-audit:
           requires:
             - build-frontend
             - build-backend
+          filters:
+            branches:
+              only: /.*/
       
-      # Validaciones finales
+      # Validate Migrations
       - validate-migrations:
           requires:
             - build-backend
-    filters:
-      branches:
-        only:
-          - main
-
-  # ============================================================================
-  # WORKFLOW: Develop - Rama de desarrollo
-  # Ejecución: Tests rápidos, Linting, validaciones
-  # ============================================================================
-  ci-develop:
-    jobs:
-      - lint-frontend
-      - lint-backend
-      - build-frontend:
-          requires:
-            - lint-frontend
-      - setup-backend:
-          requires:
-            - lint-backend
-      - test-backend:
-          requires:
-            - setup-backend
-      - build-backend:
-          requires:
-            - test-backend
-      - security-audit:
-          requires:
-            - build-frontend
-            - build-backend
-    filters:
-      branches:
-        only:
-          - develop
-
-  # ============================================================================
-  # WORKFLOW: Feature Branches - Ramas de características
-  # Ejecución: Tests mínimos, linting
-  # ============================================================================
-  ci-feature:
-    jobs:
-      - lint-frontend
-      - lint-backend
-      - build-frontend:
-          requires:
-            - lint-frontend
-      - setup-backend:
-          requires:
-            - lint-backend
-      - build-backend:
-          requires:
-            - setup-backend
-    filters:
-      branches:
-        ignore:
-          - main
-          - develop
+          filters:
+            branches:
+              only: /.*/
 
