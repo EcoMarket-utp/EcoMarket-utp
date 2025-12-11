@@ -8,8 +8,8 @@ executors:
     working_directory: ~/repo
 
 jobs:
-  # ---------- FRONTEND: build -> sync S3 -> invalidate CloudFront ----------
-  build-and-deploy-frontend:
+  # ---------- FRONTEND: build only (deployment via Render UI) ----------
+  build-frontend:
     executor: node-exec
     environment:
       CI: true
@@ -40,26 +40,9 @@ jobs:
           command: |
             # Run the build for the frontend package via workspace filter
             pnpm --filter ./apps/frontend-angular... exec ng build --configuration production
-      - run:
-          name: Ensure AWS CLI available
-          command: |
-            if ! command -v aws >/dev/null 2>&1; then
-              if command -v pip >/dev/null 2>&1; then
-                pip install --user awscli
-                export PATH=$HOME/.local/bin:$PATH
-              else
-                echo "pip not found — please ensure aws cli is available in the image" >&2
-                exit 1
-              fi
-            fi
-      - run:
-          name: Sync build to S3
-          command: |
-            aws s3 sync apps/frontend-angular/dist s3://${S3_BUCKET_FRONTEND} --delete
-      - run:
-          name: Invalidate CloudFront
-          command: |
-            aws cloudfront create-invalidation --distribution-id ${CLOUDFRONT_DISTRIBUTION_ID} --paths "/*"
+      - store_artifacts:
+          path: apps/frontend-angular/dist
+          destination: frontend
 
   # ---------- BACKEND: install deps & run prisma migrate ----------
   install-backend:
@@ -183,79 +166,10 @@ jobs:
             # DATABASE_URL must estar en Environment Variables de CircleCI
             npx prisma migrate deploy
 
-  # ---------- BACKEND: build docker, push to ECR ----------
-  build-and-push-image:
-    docker:
-      - image: cimg/base:stable
-    steps:
-      - checkout
-      - setup_remote_docker
-      - run:
-          name: Ensure AWS CLI available
-          command: |
-            if ! command -v aws >/dev/null 2>&1; then
-              if command -v pip >/dev/null 2>&1; then
-                pip install --user awscli
-                export PATH=$HOME/.local/bin:$PATH
-              else
-                echo "pip not found — please ensure aws cli is available in the image" >&2
-                exit 1
-              fi
-            fi
-      - run:
-          name: Login to ECR
-          command: |
-            aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
-      - run:
-          name: Create ECR repo if missing
-          command: |
-            if ! aws ecr describe-repositories --repository-names ${ECR_REPOSITORY_NAME} --region ${AWS_REGION} >/dev/null 2>&1; then
-              aws ecr create-repository --repository-name ${ECR_REPOSITORY_NAME} --region ${AWS_REGION}
-            else
-              echo "ECR repo ${ECR_REPOSITORY_NAME} exists"
-            fi
-      - run:
-          name: Build, tag and push image
-          command: |
-            IMAGE_TAG=circleci-${CIRCLE_SHA1}
-            IMAGE_NAME=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY_NAME}:${IMAGE_TAG}
-            docker build -t ${ECR_REPOSITORY_NAME}:${IMAGE_TAG} -f apps/backend/Dockerfile .
-            docker tag ${ECR_REPOSITORY_NAME}:${IMAGE_TAG} ${IMAGE_NAME}
-            docker push ${IMAGE_NAME}
-
-  # ---------- DEPLOY to ECS (actualiza task definition & service) ----------
-  deploy-to-ecs:
-    docker:
-      - image: cimg/base:stable
-    steps:
-      - checkout
-      - run:
-          name: Ensure AWS CLI available
-          command: |
-            if ! command -v aws >/dev/null 2>&1; then
-              if command -v pip >/dev/null 2>&1; then
-                pip install --user awscli
-                export PATH=$HOME/.local/bin:$PATH
-              else
-                echo "pip not found — please ensure aws cli is available in the image" >&2
-                exit 1
-              fi
-            fi
-      - run:
-          name: Register task definition (replace IMAGE_PLACEHOLDER)
-          command: |
-            IMAGE=${ECR_REPOSITORY_URI}:circleci-${CIRCLE_SHA1}
-            sed "s|IMAGE_PLACEHOLDER|${IMAGE}|g" .circleci/ecs_taskdef.template.json > /tmp/taskdef.json
-            aws ecs register-task-definition --cli-input-json file:///tmp/taskdef.json --region ${AWS_REGION}
-      - run:
-          name: Update ECS service (force new deployment)
-          command: |
-            aws ecs update-service --cluster ${ECS_CLUSTER_NAME} --service ${ECS_SERVICE_NAME} --force-new-deployment --region ${AWS_REGION}
-
 workflows:
-  build-and-deploy:
+  build-and-test:
     jobs:
-      - build-and-deploy-frontend
+      - build-frontend
       - install-backend
       - test-build-jar:
           requires:
@@ -263,23 +177,4 @@ workflows:
       - prisma-migrate:
           requires:
             - test-build-jar
-      - build-and-push-image:
-          requires:
-            - prisma-migrate
-      - deploy-to-ecs:
-          requires:
-            - build-and-push-image
-
-# Variables obligatorias (configurar en Project Settings > Environment Variables):
-# - AWS_ACCESS_KEY_ID
-# - AWS_SECRET_ACCESS_KEY
-# - AWS_REGION (ej. us-east-1)
-# - AWS_ACCOUNT_ID
-# - ECR_REPOSITORY_NAME (ej. ecomarket-backend)
-# - ECR_REPOSITORY_URI (ej. <account>.dkr.ecr.<region>.amazonaws.com/ecomarket-backend)
-# - ECS_CLUSTER_NAME
-# - ECS_SERVICE_NAME
-# - ECS_TASK_FAMILY
-# - S3_BUCKET_FRONTEND
-# - CLOUDFRONT_DISTRIBUTION_ID
 
