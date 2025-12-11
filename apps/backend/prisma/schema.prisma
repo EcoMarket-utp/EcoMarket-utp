@@ -330,10 +330,8 @@ model products {
   is_featured            Boolean?                 @default(false)
   is_digital             Boolean?                 @default(false)
   weight                 Decimal?                 @db.Decimal(8, 3)
-  dimensions             Json?
   category_id            BigInt?
   brand                  String?                  @db.VarChar(100)
-  tags                   String[]
   seo_title              String?                  @db.VarChar(255)
   seo_description        String?                  @db.VarChar(500)
   created_at             DateTime                 @default(now()) @db.Timestamp(6)
@@ -347,6 +345,8 @@ model products {
   product_suppliers      product_suppliers[]
   product_variants       product_variants[]
   product_views          product_views[]
+  product_tags           product_tags[]
+  product_dimensions     product_dimensions[]
   categories             categories?              @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   wishlist_items         wishlist_items[]
 
@@ -492,4 +492,30 @@ model wishlists {
   users          users            @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([user_id, name])
+}
+
+model product_tags {
+  id         BigInt   @id @default(autoincrement())
+  product_id BigInt
+  tag        String   @db.VarChar(100)
+  created_at DateTime @default(now()) @db.Timestamp(6)
+  products   products @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([product_id, tag])
+  @@index([product_id], map: "idx_product_tags_product")
+  @@index([tag], map: "idx_product_tags_tag")
+}
+
+model product_dimensions {
+  id         BigInt    @id @default(autoincrement())
+  product_id BigInt
+  length     Decimal?  @db.Decimal(10, 3)
+  width      Decimal?  @db.Decimal(10, 3)
+  height     Decimal?  @db.Decimal(10, 3)
+  created_at DateTime  @default(now()) @db.Timestamp(6)
+  updated_at DateTime  @default(now()) @db.Timestamp(6)
+  products   products  @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([product_id])
+  @@index([product_id], map: "idx_product_dimensions_product")
 }
