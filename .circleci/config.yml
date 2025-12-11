@@ -12,7 +12,7 @@ executors:
       # Imagen oficial de Node.js basada en Debian Bookworm
       # Incluye: bash, apt-get, openssh-client, git y todas las herramientas necesarias
       - image: node:20-bookworm
-    user: root
+        user: root
     working_directory: ~/repo
     environment:
       # Variables globales de ambiente
