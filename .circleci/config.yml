@@ -10,7 +10,8 @@ executors:
   node-executor:
     docker:
       # Node >= 20 requerido para NestJS 11 y Prisma
-      - image: cimg/node:20.6.0
+      # cimg/node:20.6.0-browsers incluye SSH y herramientas adicionales
+      - image: cimg/node:20.6.0-browsers
     working_directory: ~/repo
     environment:
       # Variables globales de ambiente
@@ -24,9 +25,6 @@ jobs:
   lint-frontend:
     executor: node-executor
     steps:
-      - run:
-          name: Instalar SSH client
-          command: apt-get update && apt-get install -y openssh-client
       - checkout
       - restore_cache:
           keys:
@@ -58,9 +56,6 @@ jobs:
   lint-backend:
     executor: node-executor
     steps:
-      - run:
-          name: Instalar SSH client
-          command: apt-get update && apt-get install -y openssh-client
       - checkout
       - restore_cache:
           keys:
@@ -95,9 +90,6 @@ jobs:
     environment:
       CI: true
     steps:
-      - run:
-          name: Instalar SSH client
-          command: apt-get update && apt-get install -y openssh-client
       - checkout
       - restore_cache:
           keys:
@@ -139,9 +131,6 @@ jobs:
   setup-backend:
     executor: node-executor
     steps:
-      - run:
-          name: Instalar SSH client
-          command: apt-get update && apt-get install -y openssh-client
       - checkout
       - restore_cache:
           keys:
@@ -175,9 +164,6 @@ jobs:
     environment:
       CI: true
     steps:
-      - run:
-          name: Instalar SSH client
-          command: apt-get update && apt-get install -y openssh-client
       - checkout
       - attach_workspace:
           at: .
@@ -216,9 +202,6 @@ jobs:
     environment:
       CI: true
     steps:
-      - run:
-          name: Instalar SSH client
-          command: apt-get update && apt-get install -y openssh-client
       - checkout
       - attach_workspace:
           at: .
@@ -259,9 +242,6 @@ jobs:
   security-audit:
     executor: node-executor
     steps:
-      - run:
-          name: Instalar SSH client
-          command: apt-get update && apt-get install -y openssh-client
       - checkout
       - restore_cache:
           keys:
@@ -285,9 +265,6 @@ jobs:
   validate-migrations:
     executor: node-executor
     steps:
-      - run:
-          name: Instalar SSH client
-          command: apt-get update && apt-get install -y openssh-client
       - checkout
       - attach_workspace:
           at: .
