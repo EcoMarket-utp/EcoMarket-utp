@@ -10,7 +10,6 @@ import {
   UpdateUserStatusDto,
   CreateAdminUserDto,
 } from './dto/index';
-import { Role } from '@prisma/client';
 
 @Injectable()
 export class AdminService {
@@ -19,7 +18,7 @@ export class AdminService {
   /**
    * Obtener todos los usuarios con paginación y filtros
    */
-  async getAllUsers(page: number = 1, limit: number = 10, role?: Role) {
+  async getAllUsers(page: number = 1, limit: number = 10, role?: string) {
     const skip = (page - 1) * limit;
 
     const where: any = {};
@@ -28,23 +27,23 @@ export class AdminService {
     }
 
     const [users, total] = await Promise.all([
-      this.prisma.user.findMany({
+      this.prisma.users.findMany({
         where,
         skip,
         take: limit,
         select: {
           id: true,
           email: true,
-          firstName: true,
-          lastName: true,
+          first_name: true,
+          last_name: true,
           role: true,
-          isActive: true,
-          lastLogin: true,
-          createdAt: true,
-          updatedAt: true,
+          is_active: true,
+          last_login_at: true,
+          created_at: true,
+          updated_at: true,
         },
       }),
-      this.prisma.user.count({ where }),
+      this.prisma.users.count({ where }),
     ]);
 
     return {
@@ -62,26 +61,18 @@ export class AdminService {
    * Obtener un usuario por ID
    */
   async getUserById(id: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id },
+    const user = await this.prisma.users.findUnique({
+      where: { id: BigInt(id) },
       select: {
         id: true,
         email: true,
-        firstName: true,
-        lastName: true,
+        first_name: true,
+        last_name: true,
         role: true,
-        isActive: true,
-        lastLogin: true,
-        createdAt: true,
-        updatedAt: true,
-        products: {
-          select: {
-            id: true,
-            name: true,
-            price: true,
-            isActive: true,
-          },
-        },
+        is_active: true,
+        last_login_at: true,
+        created_at: true,
+        updated_at: true,
       },
     });
 
@@ -95,17 +86,17 @@ export class AdminService {
   /**
    * Obtener usuarios por rol
    */
-  async getUsersByRole(role: Role) {
-    return await this.prisma.user.findMany({
+  async getUsersByRole(role: string) {
+    return await this.prisma.users.findMany({
       where: { role },
       select: {
         id: true,
         email: true,
-        firstName: true,
-        lastName: true,
+        first_name: true,
+        last_name: true,
         role: true,
-        isActive: true,
-        createdAt: true,
+        is_active: true,
+        created_at: true,
       },
     });
   }
@@ -114,8 +105,8 @@ export class AdminService {
    * Actualizar rol de un usuario
    */
   async updateUserRole(userId: string, dto: UpdateUserRoleDto) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
+    const user = await this.prisma.users.findUnique({
+      where: { id: BigInt(userId) },
     });
 
     if (!user) {
@@ -128,17 +119,17 @@ export class AdminService {
       );
     }
 
-    const updatedUser = await this.prisma.user.update({
-      where: { id: userId },
+    const updatedUser = await this.prisma.users.update({
+      where: { id: BigInt(userId) },
       data: { role: dto.newRole },
       select: {
         id: true,
         email: true,
-        firstName: true,
-        lastName: true,
+        first_name: true,
+        last_name: true,
         role: true,
-        isActive: true,
-        updatedAt: true,
+        is_active: true,
+        updated_at: true,
       },
     });
 
@@ -152,30 +143,30 @@ export class AdminService {
    * Cambiar estatus de un usuario (activar/desactivar)
    */
   async updateUserStatus(userId: string, dto: UpdateUserStatusDto) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
+    const user = await this.prisma.users.findUnique({
+      where: { id: BigInt(userId) },
     });
 
     if (!user) {
       throw new NotFoundException(`Usuario con ID ${userId} no encontrado`);
     }
 
-    if (user.isActive === dto.isActive) {
+    if (user.is_active === dto.isActive) {
       const status = dto.isActive ? 'activado' : 'desactivado';
       throw new BadRequestException(`El usuario ya está ${status}`);
     }
 
-    const updatedUser = await this.prisma.user.update({
-      where: { id: userId },
-      data: { isActive: dto.isActive },
+    const updatedUser = await this.prisma.users.update({
+      where: { id: BigInt(userId) },
+      data: { is_active: dto.isActive },
       select: {
         id: true,
         email: true,
-        firstName: true,
-        lastName: true,
+        first_name: true,
+        last_name: true,
         role: true,
-        isActive: true,
-        updatedAt: true,
+        is_active: true,
+        updated_at: true,
       },
     });
 
@@ -191,16 +182,16 @@ export class AdminService {
   async getUserStatistics() {
     const [totalUsers, activeUsers, usersByRole, sellerCount, adminCount] =
       await Promise.all([
-        this.prisma.user.count(),
-        this.prisma.user.count({ where: { isActive: true } }),
-        this.prisma.user.groupBy({
+        this.prisma.users.count(),
+        this.prisma.users.count({ where: { is_active: true } }),
+        this.prisma.users.groupBy({
           by: ['role'],
           _count: {
             id: true,
           },
         }),
-        this.prisma.user.count({ where: { role: 'SELLER' } }),
-        this.prisma.user.count({ where: { role: 'ADMIN' } }),
+        this.prisma.users.count({ where: { role: 'SELLER' } }),
+        this.prisma.users.count({ where: { role: 'ADMIN' } }),
       ]);
 
     const roleStats = usersByRole.reduce(
@@ -208,7 +199,7 @@ export class AdminService {
         acc[item.role] = item._count.id;
         return acc;
       },
-      {} as Record<Role, number>,
+      {} as Record<string, number>,
     );
 
     return {
@@ -226,22 +217,22 @@ export class AdminService {
    * Buscar usuarios por email o nombre
    */
   async searchUsers(query: string) {
-    return await this.prisma.user.findMany({
+    return await this.prisma.users.findMany({
       where: {
         OR: [
           { email: { contains: query, mode: 'insensitive' } },
-          { firstName: { contains: query, mode: 'insensitive' } },
-          { lastName: { contains: query, mode: 'insensitive' } },
+          { first_name: { contains: query, mode: 'insensitive' } },
+          { last_name: { contains: query, mode: 'insensitive' } },
         ],
       },
       select: {
         id: true,
         email: true,
-        firstName: true,
-        lastName: true,
+        first_name: true,
+        last_name: true,
         role: true,
-        isActive: true,
-        createdAt: true,
+        is_active: true,
+        created_at: true,
       },
     });
   }
@@ -250,7 +241,7 @@ export class AdminService {
    * Crear un usuario admin
    */
   async createAdminUser(dto: CreateAdminUserDto) {
-    const existingUser = await this.prisma.user.findUnique({
+    const existingUser = await this.prisma.users.findUnique({
       where: { email: dto.email },
     });
 
@@ -261,23 +252,24 @@ export class AdminService {
     const bcrypt = require('bcrypt');
     const hashedPassword = await bcrypt.hash(dto.password, 10);
 
-    const user = await this.prisma.user.create({
+    const user = await this.prisma.users.create({
       data: {
         email: dto.email,
         password: hashedPassword,
-        firstName: dto.firstName,
-        lastName: dto.lastName,
+        first_name: dto.firstName,
+        last_name: dto.lastName,
         role: 'ADMIN',
-        isActive: true,
+        is_active: true,
+        username: dto.email.split('@')[0],
       },
       select: {
         id: true,
         email: true,
-        firstName: true,
-        lastName: true,
+        first_name: true,
+        last_name: true,
         role: true,
-        isActive: true,
-        createdAt: true,
+        is_active: true,
+        created_at: true,
       },
     });
 
@@ -291,22 +283,22 @@ export class AdminService {
    * Eliminar un usuario (soft delete)
    */
   async deleteUser(userId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
+    const user = await this.prisma.users.findUnique({
+      where: { id: BigInt(userId) },
     });
 
     if (!user) {
       throw new NotFoundException(`Usuario con ID ${userId} no encontrado`);
     }
 
-    const deletedUser = await this.prisma.user.update({
-      where: { id: userId },
-      data: { isActive: false },
+    const deletedUser = await this.prisma.users.update({
+      where: { id: BigInt(userId) },
+      data: { is_active: false },
       select: {
         id: true,
         email: true,
-        firstName: true,
-        lastName: true,
+        first_name: true,
+        last_name: true,
       },
     });
 

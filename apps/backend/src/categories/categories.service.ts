@@ -17,7 +17,7 @@ export class CategoriesService {
    */
   async create(dto: CreateCategoryDto) {
     // Verificar si la categoría ya existe
-    const existingCategory = await this.prisma.category.findUnique({
+    const existingCategory = await this.prisma.categories.findUnique({
       where: { name: dto.name },
     });
 
@@ -25,11 +25,12 @@ export class CategoriesService {
       throw new ConflictException(`La categoría "${dto.name}" ya existe`);
     }
 
-    return await this.prisma.category.create({
+    return await this.prisma.categories.create({
       data: {
         name: dto.name,
         description: dto.description,
-        isActive: true,
+        slug: dto.name.toLowerCase().replace(/\s+/g, '-'),
+        is_active: true,
       },
     });
   }
@@ -40,17 +41,17 @@ export class CategoriesService {
   async findAll(includeInactive = false) {
     const where: any = {};
     if (!includeInactive) {
-      where.isActive = true;
+      where.is_active = true;
     }
 
-    return await this.prisma.category.findMany({
+    return await this.prisma.categories.findMany({
       where,
       include: {
         _count: {
           select: { products: true },
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { created_at: 'desc' },
     });
   }
 
@@ -58,15 +59,15 @@ export class CategoriesService {
    * Obtener una categoría por ID
    */
   async findById(id: string) {
-    const category = await this.prisma.category.findUnique({
-      where: { id },
+    const category = await this.prisma.categories.findUnique({
+      where: { id: BigInt(id) },
       include: {
         products: {
           select: {
             id: true,
             name: true,
             price: true,
-            isActive: true,
+            is_active: true,
           },
         },
         _count: {
@@ -86,7 +87,7 @@ export class CategoriesService {
    * Obtener categoría por nombre
    */
   async findByName(name: string) {
-    const category = await this.prisma.category.findUnique({
+    const category = await this.prisma.categories.findUnique({
       where: { name },
       include: {
         _count: {
@@ -110,7 +111,7 @@ export class CategoriesService {
 
     // Si cambia el nombre, verificar que no exista otra categoría con ese nombre
     if (dto.name && dto.name !== category.name) {
-      const existingCategory = await this.prisma.category.findUnique({
+      const existingCategory = await this.prisma.categories.findUnique({
         where: { name: dto.name },
       });
 
@@ -119,15 +120,16 @@ export class CategoriesService {
       }
     }
 
-    return await this.prisma.category.update({
-      where: { id },
+    return await this.prisma.categories.update({
+      where: { id: BigInt(id) },
       data: {
         name: dto.name || category.name,
+        slug: (dto.name || category.name).toLowerCase().replace(/\s+/g, '-'),
         description:
           dto.description !== undefined
             ? dto.description
             : category.description,
-        isActive: dto.isActive !== undefined ? dto.isActive : category.isActive,
+        is_active: dto.isActive !== undefined ? dto.isActive : category.is_active,
       },
       include: {
         _count: {
@@ -143,9 +145,9 @@ export class CategoriesService {
   async toggleStatus(id: string) {
     const category = await this.findById(id);
 
-    return await this.prisma.category.update({
-      where: { id },
-      data: { isActive: !category.isActive },
+    return await this.prisma.categories.update({
+      where: { id: BigInt(id) },
+      data: { is_active: !category.is_active },
       include: {
         _count: {
           select: { products: true },
@@ -161,8 +163,8 @@ export class CategoriesService {
     const category = await this.findById(id);
 
     // Verificar si tiene productos activos
-    const productCount = await this.prisma.product.count({
-      where: { categoryId: id, isActive: true },
+    const productCount = await this.prisma.products.count({
+      where: { category_id: BigInt(id), is_active: true },
     });
 
     if (productCount > 0) {
@@ -171,9 +173,9 @@ export class CategoriesService {
       );
     }
 
-    return await this.prisma.category.update({
-      where: { id },
-      data: { isActive: false },
+    return await this.prisma.categories.update({
+      where: { id: BigInt(id) },
+      data: { is_active: false },
     });
   }
 
@@ -183,25 +185,25 @@ export class CategoriesService {
   async findWithProducts(id: string, skip = 0, take = 10) {
     const category = await this.findById(id);
 
-    const products = await this.prisma.product.findMany({
-      where: { categoryId: id, isActive: true },
+    const products = await this.prisma.products.findMany({
+      where: { category_id: BigInt(id), is_active: true },
       skip,
       take,
       include: {
-        seller: {
+        users: {
           select: {
             id: true,
             email: true,
-            firstName: true,
-            lastName: true,
+            first_name: true,
+            last_name: true,
           },
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { created_at: 'desc' },
     });
 
-    const totalProducts = await this.prisma.product.count({
-      where: { categoryId: id, isActive: true },
+    const totalProducts = await this.prisma.products.count({
+      where: { category_id: BigInt(id), is_active: true },
     });
 
     return {
@@ -220,12 +222,12 @@ export class CategoriesService {
    * Obtener estadísticas de categorías
    */
   async getStatistics() {
-    const totalCategories = await this.prisma.category.count();
-    const activeCategories = await this.prisma.category.count({
-      where: { isActive: true },
+    const totalCategories = await this.prisma.categories.count();
+    const activeCategories = await this.prisma.categories.count({
+      where: { is_active: true },
     });
 
-    const categoriesWithProducts = await this.prisma.category.findMany({
+    const categoriesWithProducts = await this.prisma.categories.findMany({
       select: {
         id: true,
         name: true,

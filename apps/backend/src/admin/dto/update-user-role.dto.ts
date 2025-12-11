@@ -1,5 +1,4 @@
 import { IsEnum, IsNotEmpty, IsString } from 'class-validator';
-import { Role } from '@prisma/client';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class UpdateUserRoleDto {
@@ -9,5 +8,5 @@ export class UpdateUserRoleDto {
   })
   @IsNotEmpty()
   @IsEnum(['CUSTOMER', 'SELLER', 'ADMIN'])
-  newRole: Role;
+  newRole: string;
 }
