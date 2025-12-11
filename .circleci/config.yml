@@ -9,9 +9,8 @@ version: 2.1
 executors:
   node-executor:
     docker:
-      # Imagen oficial de Node.js que incluye SSH, git y herramientas completas
-      # Basada en Debian Bullseye con todas las dependencias del sistema
-      - image: node:20.6.0-bullseye
+      # Imagen oficial de CircleCI para Node.js con navegadores y SSH incluidos
+      - image: cimg/node:20-browsers
     working_directory: ~/repo
     environment:
       # Variables globales de ambiente
@@ -25,9 +24,6 @@ jobs:
   lint-frontend:
     executor: node-executor
     steps:
-      - run:
-          name: Instalar openssh-client
-          command: apt-get update && apt-get install -y openssh-client git
       - checkout
       - restore_cache:
           keys:
@@ -59,9 +55,6 @@ jobs:
   lint-backend:
     executor: node-executor
     steps:
-      - run:
-          name: Instalar openssh-client
-          command: apt-get update && apt-get install -y openssh-client git
       - checkout
       - restore_cache:
           keys:
@@ -96,9 +89,6 @@ jobs:
     environment:
       CI: true
     steps:
-      - run:
-          name: Instalar openssh-client
-          command: apt-get update && apt-get install -y openssh-client git
       - checkout
       - restore_cache:
           keys:
@@ -140,9 +130,6 @@ jobs:
   setup-backend:
     executor: node-executor
     steps:
-      - run:
-          name: Instalar openssh-client
-          command: apt-get update && apt-get install -y openssh-client git
       - checkout
       - restore_cache:
           keys:
@@ -176,9 +163,6 @@ jobs:
     environment:
       CI: true
     steps:
-      - run:
-          name: Instalar openssh-client
-          command: apt-get update && apt-get install -y openssh-client git
       - checkout
       - attach_workspace:
           at: .
@@ -217,9 +201,6 @@ jobs:
     environment:
       CI: true
     steps:
-      - run:
-          name: Instalar openssh-client
-          command: apt-get update && apt-get install -y openssh-client git
       - checkout
       - attach_workspace:
           at: .
@@ -260,9 +241,6 @@ jobs:
   security-audit:
     executor: node-executor
     steps:
-      - run:
-          name: Instalar openssh-client
-          command: apt-get update && apt-get install -y openssh-client git
       - checkout
       - restore_cache:
           keys:
@@ -286,9 +264,6 @@ jobs:
   validate-migrations:
     executor: node-executor
     steps:
-      - run:
-          name: Instalar openssh-client
-          command: apt-get update && apt-get install -y openssh-client git
       - checkout
       - attach_workspace:
           at: .
