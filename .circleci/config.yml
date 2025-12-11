@@ -9,9 +9,9 @@ version: 2.1
 executors:
   node-executor:
     docker:
-      # Node >= 20 requerido para NestJS 11 y Prisma
-      # cimg/node:20.6.0-browsers incluye SSH y herramientas adicionales
-      - image: cimg/node:20.6.0-browsers
+      # Imagen oficial de Node.js que incluye SSH, git y herramientas completas
+      # Basada en Debian Bullseye con todas las dependencias del sistema
+      - image: node:20.6.0-bullseye
     working_directory: ~/repo
     environment:
       # Variables globales de ambiente
