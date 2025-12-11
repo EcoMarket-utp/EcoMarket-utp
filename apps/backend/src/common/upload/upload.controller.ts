@@ -13,6 +13,7 @@ import {
   FilesInterceptor,
 } from '@nestjs/platform-express';
 import { ApiOperation, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import type { Multer } from 'multer';
 import { UploadService } from '../services/upload.service';
 
 @Controller('api/uploads')
@@ -38,7 +39,7 @@ export class UploadController {
       },
     },
   })
-  async uploadImage(@UploadedFile() file: Express.Multer.File) {
+  async uploadImage(@UploadedFile() file: Multer.File) {
     if (!file) {
       throw new BadRequestException('No file provided');
     }
@@ -71,7 +72,7 @@ export class UploadController {
       },
     },
   })
-  async uploadImages(@UploadedFiles() files: Express.Multer.File[]) {
+  async uploadImages(@UploadedFiles() files: Multer.File[]) {
     if (!files || files.length === 0) {
       throw new BadRequestException('No files provided');
     }

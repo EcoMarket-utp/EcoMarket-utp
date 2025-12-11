@@ -2,6 +2,7 @@ import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { mkdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import type { Multer } from 'multer';
 
 @Injectable()
 export class UploadService {
@@ -21,7 +22,7 @@ export class UploadService {
   /**
    * Subir un archivo y guardar localmente
    */
-  async uploadFile(file: Express.Multer.File): Promise<{
+  async uploadFile(file: Multer.File): Promise<{
     url: string;
     filename: string;
     size: number;
@@ -77,7 +78,7 @@ export class UploadService {
    * Subir múltiples archivos
    */
   async uploadMultipleFiles(
-    files: Express.Multer.File[],
+    files: Multer.File[],
   ): Promise<
     Array<{
       url: string;
@@ -89,7 +90,11 @@ export class UploadService {
       throw new BadRequestException('No files provided');
     }
 
-    const uploadedFiles = [];
+    const uploadedFiles: Array<{
+      url: string;
+      filename: string;
+      size: number;
+    }> = [];
     for (const file of files) {
       const result = await this.uploadFile(file);
       uploadedFiles.push(result);
