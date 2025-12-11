@@ -1,4 +1,6 @@
-/* Compensar header fijo */
-.app-container {
-	padding-top: 64px; /* debe coincidir con la altura del header */
+.main-content {
+  min-height: calc(100vh - 300px);
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  padding: 2rem 1rem;
 }
+

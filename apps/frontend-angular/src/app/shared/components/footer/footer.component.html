@@ -1,0 +1,39 @@
+<footer class="footer">
+  <div class="footer-content">
+    <!-- Brand Section -->
+    <div class="footer-section brand">
+      <div class="footer-logo">
+        <span class="logo-icon">🌿</span>
+        <span class="logo-text">EcoMarket</span>
+      </div>
+      <p class="brand-description">
+        Tu marketplace sostenible de productos ecológicos. Comprometidos con un planeta más verde.
+      </p>
+      <div class="social-links">
+        <a href="#" title="Facebook" class="social-icon">f</a>
+        <a href="#" title="Instagram" class="social-icon">📷</a>
+        <a href="#" title="Twitter" class="social-icon">𝕏</a>
+        <a href="#" title="LinkedIn" class="social-icon">in</a>
+      </div>
+    </div>
+
+    <!-- Footer Sections -->
+    <div class="footer-sections">
+      <div class="footer-section" *ngFor="let section of sections">
+        <h4>{{ section.title }}</h4>
+        <ul>
+          <li *ngFor="let link of section.links">
+            <a href="#">{{ link }}</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Bar -->
+  <div class="footer-bottom">
+    <p>
+      &copy; {{ currentYear }} EcoMarket. Todos los derechos reservados. | Hecho con 💚 para un planeta mejor
+    </p>
+  </div>
+</footer>

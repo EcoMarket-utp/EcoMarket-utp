@@ -1,0 +1,84 @@
+<nav class="navbar">
+  <div class="navbar-container">
+    <!-- Logo -->
+    <div class="navbar-logo">
+      <a routerLink="/" (click)="closeMenus()">
+        <span class="logo-icon">🌿</span>
+        <span class="logo-text">EcoMarket</span>
+      </a>
+    </div>
+
+    <!-- Mobile Menu Toggle -->
+    <button class="menu-toggle" (click)="toggleMenu()" [class.active]="isMenuOpen">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+    <!-- Navigation Links -->
+    <div class="navbar-menu" [class.active]="isMenuOpen">
+      <ul class="nav-links">
+        <li>
+          <a routerLink="/products" routerLinkActive="active" (click)="closeMenus()">
+            Productos
+          </a>
+        </li>
+        <li>
+          <a routerLink="/categories" routerLinkActive="active" (click)="closeMenus()">
+            Categorías
+          </a>
+        </li>
+        <li *ngIf="isAuthenticated">
+          <a routerLink="/dashboard" routerLinkActive="active" (click)="closeMenus()">
+            Mi Perfil
+          </a>
+        </li>
+        <li *ngIf="currentUser?.role === 'ADMIN'">
+          <a routerLink="/admin" routerLinkActive="active" (click)="closeMenus()">
+            Administrador
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Right Section (Icons & User Menu) -->
+    <div class="navbar-right">
+      <!-- Cart Icon -->
+      <button class="cart-icon" (click)="navigateTo('/cart')">
+        <span class="cart-icon-symbol">🛒</span>
+        <span class="cart-count" *ngIf="cartItemCount > 0">{{ cartItemCount }}</span>
+      </button>
+
+      <!-- User Menu -->
+      <div class="user-menu" *ngIf="isAuthenticated">
+        <button class="user-button" (click)="toggleUserMenu()">
+          <span class="user-avatar">{{ currentUser?.firstName?.charAt(0) || 'U' }}</span>
+          <span class="user-name">{{ currentUser?.firstName || 'Usuario' }}</span>
+        </button>
+
+        <div class="dropdown-menu" *ngIf="isUserMenuOpen">
+          <a routerLink="/dashboard" (click)="closeMenus()">
+            <span>👤</span> Mi Perfil
+          </a>
+          <a routerLink="/dashboard" (click)="closeMenus()">
+            <span>📦</span> Mis Órdenes
+          </a>
+          <hr />
+          <button (click)="logout()">
+            <span>🚪</span> Cerrar Sesión
+          </button>
+        </div>
+      </div>
+
+      <!-- Login/Register Buttons -->
+      <div class="auth-buttons" *ngIf="!isAuthenticated">
+        <a routerLink="/auth/login" class="btn btn-outline">
+          Ingresar
+        </a>
+        <a routerLink="/auth/register" class="btn btn-primary">
+          Registrarse
+        </a>
+      </div>
+    </div>
+  </div>
+</nav>
