@@ -24,6 +24,9 @@ jobs:
   lint-frontend:
     executor: node-executor
     steps:
+      - run:
+          name: Instalar SSH client
+          command: apt-get update && apt-get install -y openssh-client
       - checkout
       - restore_cache:
           keys:
@@ -55,6 +58,9 @@ jobs:
   lint-backend:
     executor: node-executor
     steps:
+      - run:
+          name: Instalar SSH client
+          command: apt-get update && apt-get install -y openssh-client
       - checkout
       - restore_cache:
           keys:
@@ -89,6 +95,9 @@ jobs:
     environment:
       CI: true
     steps:
+      - run:
+          name: Instalar SSH client
+          command: apt-get update && apt-get install -y openssh-client
       - checkout
       - restore_cache:
           keys:
@@ -128,9 +137,11 @@ jobs:
   # INSTALACIÓN DE DEPENDENCIAS: Backend + Prisma
   # ============================================================================
   setup-backend:
-
     executor: node-executor
     steps:
+      - run:
+          name: Instalar SSH client
+          command: apt-get update && apt-get install -y openssh-client
       - checkout
       - restore_cache:
           keys:
@@ -164,6 +175,9 @@ jobs:
     environment:
       CI: true
     steps:
+      - run:
+          name: Instalar SSH client
+          command: apt-get update && apt-get install -y openssh-client
       - checkout
       - attach_workspace:
           at: .
@@ -202,6 +216,9 @@ jobs:
     environment:
       CI: true
     steps:
+      - run:
+          name: Instalar SSH client
+          command: apt-get update && apt-get install -y openssh-client
       - checkout
       - attach_workspace:
           at: .
@@ -242,6 +259,9 @@ jobs:
   security-audit:
     executor: node-executor
     steps:
+      - run:
+          name: Instalar SSH client
+          command: apt-get update && apt-get install -y openssh-client
       - checkout
       - restore_cache:
           keys:
@@ -265,6 +285,9 @@ jobs:
   validate-migrations:
     executor: node-executor
     steps:
+      - run:
+          name: Instalar SSH client
+          command: apt-get update && apt-get install -y openssh-client
       - checkout
       - attach_workspace:
           at: .
