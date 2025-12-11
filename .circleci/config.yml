@@ -25,6 +25,9 @@ jobs:
   lint-frontend:
     executor: node-executor
     steps:
+      - run:
+          name: Instalar openssh-client
+          command: apt-get update && apt-get install -y openssh-client git
       - checkout
       - restore_cache:
           keys:
@@ -56,6 +59,9 @@ jobs:
   lint-backend:
     executor: node-executor
     steps:
+      - run:
+          name: Instalar openssh-client
+          command: apt-get update && apt-get install -y openssh-client git
       - checkout
       - restore_cache:
           keys:
@@ -90,6 +96,9 @@ jobs:
     environment:
       CI: true
     steps:
+      - run:
+          name: Instalar openssh-client
+          command: apt-get update && apt-get install -y openssh-client git
       - checkout
       - restore_cache:
           keys:
@@ -131,6 +140,9 @@ jobs:
   setup-backend:
     executor: node-executor
     steps:
+      - run:
+          name: Instalar openssh-client
+          command: apt-get update && apt-get install -y openssh-client git
       - checkout
       - restore_cache:
           keys:
@@ -164,6 +176,9 @@ jobs:
     environment:
       CI: true
     steps:
+      - run:
+          name: Instalar openssh-client
+          command: apt-get update && apt-get install -y openssh-client git
       - checkout
       - attach_workspace:
           at: .
@@ -202,6 +217,9 @@ jobs:
     environment:
       CI: true
     steps:
+      - run:
+          name: Instalar openssh-client
+          command: apt-get update && apt-get install -y openssh-client git
       - checkout
       - attach_workspace:
           at: .
@@ -242,6 +260,9 @@ jobs:
   security-audit:
     executor: node-executor
     steps:
+      - run:
+          name: Instalar openssh-client
+          command: apt-get update && apt-get install -y openssh-client git
       - checkout
       - restore_cache:
           keys:
@@ -265,6 +286,9 @@ jobs:
   validate-migrations:
     executor: node-executor
     steps:
+      - run:
+          name: Instalar openssh-client
+          command: apt-get update && apt-get install -y openssh-client git
       - checkout
       - attach_workspace:
           at: .
