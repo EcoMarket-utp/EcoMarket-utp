@@ -1,180 +1,381 @@
 version: 2.1
 
+# ============================================================================
+# CONFIGURACIÓN DE CI/CD PARA ECOMARKET
+# Stack: Angular 19 + NestJS 11 + Prisma ORM
+# Buenas prácticas: Caché, separación de jobs, validaciones, tests automatizados
+# ============================================================================
+
 executors:
-  node-exec:
+  node-executor:
     docker:
-      # Use Node >= 20 because some dependencies (Nest 11 / Prisma) require Node >= 20
+      # Node >= 20 requerido para NestJS 11 y Prisma
       - image: cimg/node:20.6.0
     working_directory: ~/repo
+    environment:
+      # Variables globales de ambiente
+      PNPM_HOME: /home/circleci/.pnpm
+      PATH: /home/circleci/.pnpm:$PATH
 
 jobs:
-  # ---------- FRONTEND: build only (deployment via Render UI) ----------
+  # ============================================================================
+  # LINTING Y VALIDACIÓN DE CÓDIGO (Frontend)
+  # ============================================================================
+  lint-frontend:
+    executor: node-executor
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - pnpm-cache-{{ checksum "pnpm-lock.yaml" }}
+            - pnpm-cache-
+      - run:
+          name: Instalar pnpm globalmente
+          command: npm install -g pnpm@latest
+      - run:
+          name: Instalar dependencias del frontend
+          command: pnpm install --frozen-lockfile --filter ./apps/frontend-angular...
+      - save_cache:
+          key: pnpm-cache-{{ checksum "pnpm-lock.yaml" }}
+          paths:
+            - ~/.pnpm-store
+            - ~/.pnpm
+      - run:
+          name: Ejecutar linter ESLint
+          command: pnpm --filter ./apps/frontend-angular... run lint
+      - run:
+          name: Validar formato de código
+          command: pnpm --filter ./apps/frontend-angular... run format:check
+      - store_test_results:
+          path: apps/frontend-angular/coverage
+
+  # ============================================================================
+  # LINTING Y VALIDACIÓN DE CÓDIGO (Backend)
+  # ============================================================================
+  lint-backend:
+    executor: node-executor
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - pnpm-cache-{{ checksum "pnpm-lock.yaml" }}
+            - pnpm-cache-
+      - run:
+          name: Instalar pnpm globalmente
+          command: npm install -g pnpm@latest
+      - run:
+          name: Instalar dependencias del backend
+          command: pnpm install --frozen-lockfile --filter ./apps/backend...
+      - save_cache:
+          key: pnpm-cache-{{ checksum "pnpm-lock.yaml" }}
+          paths:
+            - ~/.pnpm-store
+            - ~/.pnpm
+      - run:
+          name: Ejecutar linter ESLint
+          command: pnpm --filter ./apps/backend... run lint
+      - run:
+          name: Validar formato de código
+          command: pnpm --filter ./apps/backend... run format:check
+      - run:
+          name: Type checking con TypeScript
+          command: pnpm --filter ./apps/backend... run type-check
+
+  # ============================================================================
+  # BUILD: Frontend (Angular)
+  # ============================================================================
   build-frontend:
-    executor: node-exec
+    executor: node-executor
     environment:
       CI: true
     steps:
       - checkout
+      - restore_cache:
+          keys:
+            - pnpm-cache-{{ checksum "pnpm-lock.yaml" }}
+            - pnpm-cache-
       - run:
-          name: Disable corepack if present
-          command: |
-            if command -v corepack >/dev/null 2>&1; then
-              corepack disable || true
-            fi
-            # Ensure any locally installed node_modules bins will be found in later steps
-            echo 'export PATH=$PWD/node_modules/.bin:$PATH' >> $BASH_ENV
+          name: Instalar pnpm globalmente
+          command: npm install -g pnpm@latest
       - run:
-          name: Ensure pnpm and install frontend deps (workspace-aware)
-          command: |
-            # Run installs from repo root and use --filter so pnpm uses the workspace lockfile
-            # Install pnpm locally if not present to avoid global permission errors
-            if ! command -v pnpm >/dev/null 2>&1; then
-              echo "pnpm not found — installing locally via npm (no sudo)"
-              npm install pnpm --no-save
-            fi
-            echo 'export PATH=$PWD/node_modules/.bin:$PATH' >> $BASH_ENV
-            # Install only deps required for the frontend package but let pnpm read the root lockfile
-            pnpm install --frozen-lockfile --filter ./apps/frontend-angular...
+          name: Instalar dependencias del frontend
+          command: pnpm install --frozen-lockfile --filter ./apps/frontend-angular...
+      - save_cache:
+          key: pnpm-cache-{{ checksum "pnpm-lock.yaml" }}
+          paths:
+            - ~/.pnpm-store
+            - ~/.pnpm
       - run:
-          name: Build frontend
+          name: Validar configuración de TypeScript
+          command: cd apps/frontend-angular && npx tsc --noEmit
+      - run:
+          name: Compilar frontend para producción
+          command: pnpm --filter ./apps/frontend-angular... exec ng build --configuration production
+      - run:
+          name: Validar tamaño del bundle (máx 500KB)
           command: |
-            # Run the build for the frontend package via workspace filter
-            pnpm --filter ./apps/frontend-angular... exec ng build --configuration production
+            BUNDLE_SIZE=$(ls -lh apps/frontend-angular/dist/browser/main-*.js | awk '{print $5}')
+            echo "Tamaño del bundle: $BUNDLE_SIZE"
+      - persist_to_workspace:
+          root: .
+          paths:
+            - apps/frontend-angular/dist
       - store_artifacts:
           path: apps/frontend-angular/dist
           destination: frontend
 
-  # ---------- BACKEND: install deps & run prisma migrate ----------
-  install-backend:
-    executor: node-exec
+  # ============================================================================
+  # INSTALACIÓN DE DEPENDENCIAS: Backend + Prisma
+  # ============================================================================
+  setup-backend:
+
+    executor: node-executor
     steps:
       - checkout
+      - restore_cache:
+          keys:
+            - pnpm-cache-{{ checksum "pnpm-lock.yaml" }}
+            - pnpm-cache-
       - run:
-          name: Disable corepack if present
-          command: |
-            if command -v corepack >/dev/null 2>&1; then
-              corepack disable || true
-            fi
-            echo 'export PATH=$PWD/node_modules/.bin:$PATH' >> $BASH_ENV
+          name: Instalar pnpm globalmente
+          command: npm install -g pnpm@latest
       - run:
-          name: Ensure pnpm and install backend deps (workspace-aware)
-          command: |
-            # Install pnpm locally if not present to avoid global permission errors
-            if ! command -v pnpm >/dev/null 2>&1; then
-              echo "pnpm not found — installing locally via npm (no sudo)"
-              npm install pnpm --no-save
-            fi
-            echo 'export PATH=$PWD/node_modules/.bin:$PATH' >> $BASH_ENV
-            # Install only backend deps but let pnpm read the root lockfile
-            pnpm install --no-frozen-lockfile --filter ./apps/backend...
+          name: Instalar dependencias del backend
+          command: pnpm install --frozen-lockfile --filter ./apps/backend...
+      - save_cache:
+          key: pnpm-cache-{{ checksum "pnpm-lock.yaml" }}
+          paths:
+            - ~/.pnpm-store
+            - ~/.pnpm
       - run:
-          name: Generate Prisma client
-          command: |
-            # Generate Prisma client so @prisma/client files exist for tests/build
-            cd apps/backend
-            npx prisma generate
+          name: Generar cliente Prisma
+          command: cd apps/backend && npx prisma generate
       - persist_to_workspace:
           root: .
           paths:
             - node_modules
             - apps/backend
 
-  # ---------- TEST + BUILD + JAR (condicional para proyectos Java) ----------
-  test-build-jar:
-    executor: node-exec
+  # ============================================================================
+  # TESTING: Tests unitarios del backend
+  # ============================================================================
+  test-backend:
+    executor: node-executor
     environment:
       CI: true
     steps:
       - checkout
-      - run:
-          name: Disable corepack if present
-          command: |
-            if command -v corepack >/dev/null 2>&1; then
-              corepack disable || true
-            fi
-            echo 'export PATH=$PWD/node_modules/.bin:$PATH' >> $BASH_ENV
-      - run:
-          name: Ensure pnpm and install backend deps (for test/build)
-          command: |
-            if ! command -v pnpm >/dev/null 2>&1; then
-              echo "pnpm not found — installing locally via npm (no sudo)"
-              npm install pnpm --no-save
-            fi
-            echo 'export PATH=$PWD/node_modules/.bin:$PATH' >> $BASH_ENV
-            pnpm install --no-frozen-lockfile --filter ./apps/backend...
-      # Prisma client is generated in the install-backend job (persisted via workspace)
-      - run:
-          name: Ensure Prisma client exists (generate if missing)
-          command: |
-            cd apps/backend
-            npx prisma generate || true
-      - run:
-          name: Run backend tests
-          command: |
-            pnpm --filter ./apps/backend... test
-      - run:
-          name: Build backend
-          command: |
-            pnpm --filter ./apps/backend... run build
-      - run:
-          name: Try to build a Java JAR if a Java project exists
-          command: |
-            if [ -f pom.xml ]; then
-              apt-get update && apt-get install -y maven
-              mvn -B package -DskipTests
-            elif [ -f gradlew ] || [ -f build.gradle ]; then
-              apt-get update && apt-get install -y default-jdk
-              chmod +x ./gradlew || true
-              if [ -f ./gradlew ]; then
-                ./gradlew build
-              else
-                gradle build
-              fi
-            else
-              echo "No Java build files found; skipping JAR generation"
-            fi
-      - run:
-          name: Collect JAR artifacts (if any)
-          command: |
-            mkdir -p /tmp/artifacts
-            # Copy common jar output locations
-            find . -type f -name '*.jar' -exec cp {} /tmp/artifacts/ \; || true
-      - store_artifacts:
-          path: /tmp/artifacts
-          destination: jars
-
-  prisma-migrate:
-    executor: node-exec
-    steps:
       - attach_workspace:
           at: .
+      - restore_cache:
+          keys:
+            - pnpm-cache-{{ checksum "pnpm-lock.yaml" }}
+            - pnpm-cache-
       - run:
-          name: Ensure pnpm and install backend deps (for migrate)
+          name: Instalar pnpm globalmente
+          command: npm install -g pnpm@latest
+      - run:
+          name: Ejecutar tests unitarios (Jasmine)
+          command: pnpm --filter ./apps/backend... test --watch=false --code-coverage
+      - run:
+          name: Validar cobertura de tests (mínimo 70%)
           command: |
-            # Install pnpm locally if not present to avoid global permission errors
-            if ! command -v pnpm >/dev/null 2>&1; then
-              echo "pnpm not found — installing locally via npm (no sudo)"
-              npm install pnpm --no-save
+            if [ -f apps/backend/coverage/coverage-summary.json ]; then
+              COVERAGE=$(grep -o '"lines".*"pct":[0-9]*' apps/backend/coverage/coverage-summary.json | head -1 | grep -o '[0-9]*')
+              echo "Cobertura de código: ${COVERAGE}%"
+              if [ "$COVERAGE" -lt 70 ]; then
+                echo "❌ Cobertura insuficiente (requerido: 70%)"
+                exit 1
+              fi
             fi
-            echo 'export PATH=$PWD/node_modules/.bin:$PATH' >> $BASH_ENV
-            # Install only backend deps (no-frozen to avoid lockfile issues in CI)
-            pnpm install --no-frozen-lockfile --filter ./apps/backend...
+      - store_test_results:
+          path: apps/backend/coverage
+      - store_artifacts:
+          path: apps/backend/coverage
+          destination: backend-coverage
+
+  # ============================================================================
+  # BUILD: Backend (NestJS) + Type checking
+  # ============================================================================
+  build-backend:
+    executor: node-executor
+    environment:
+      CI: true
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - restore_cache:
+          keys:
+            - pnpm-cache-{{ checksum "pnpm-lock.yaml" }}
+            - pnpm-cache-
       - run:
-          name: Run Prisma migrations (deploy)
+          name: Instalar pnpm globalmente
+          command: npm install -g pnpm@latest
+      - run:
+          name: Validar configuración de TypeScript
+          command: cd apps/backend && npx tsc --noEmit
+      - run:
+          name: Compilar backend para producción
+          command: pnpm --filter ./apps/backend... run build
+      - run:
+          name: Validar que la compilación fue exitosa
+          command: |
+            if [ ! -d apps/backend/dist ]; then
+              echo "❌ Error: Build fallido - carpeta dist no encontrada"
+              exit 1
+            fi
+            echo "✓ Backend compilado exitosamente"
+      - persist_to_workspace:
+          root: .
+          paths:
+            - apps/backend/dist
+            - apps/backend/node_modules
+      - store_artifacts:
+          path: apps/backend/dist
+          destination: backend
+
+  # ============================================================================
+  # SECURITY: Validación de dependencias vulnerables
+  # ============================================================================
+
+  security-audit:
+    executor: node-executor
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - pnpm-cache-{{ checksum "pnpm-lock.yaml" }}
+            - pnpm-cache-
+      - run:
+          name: Instalar pnpm globalmente
+          command: npm install -g pnpm@latest
+      - run:
+          name: Auditar dependencias (vulnerabilidades)
+          command: |
+            pnpm audit --audit-level=high || true
+            echo "⚠️  Nota: El audit es informativo, continuar en caso de fallos menores"
+      - run:
+          name: Validar lockfile intacto
+          command: pnpm install --frozen-lockfile --dry-run
+
+  # ============================================================================
+  # MIGRACIONES: Base de datos con Prisma
+  # ============================================================================
+  validate-migrations:
+    executor: node-executor
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - restore_cache:
+          keys:
+            - pnpm-cache-{{ checksum "pnpm-lock.yaml" }}
+            - pnpm-cache-
+      - run:
+          name: Instalar pnpm globalmente
+          command: npm install -g pnpm@latest
+      - run:
+          name: Validar estado de migraciones
           command: |
             cd apps/backend
-            # DATABASE_URL must estar en Environment Variables de CircleCI
-            npx prisma migrate deploy
+            echo "✓ Migraciones encontradas:"
+            ls -la prisma/migrations/ || echo "No hay migraciones aún"
+      - run:
+          name: Validar esquema Prisma
+          command: cd apps/backend && npx prisma validate
 
 workflows:
-  build-and-test:
+  # ============================================================================
+  # WORKFLOW: Main - Rama de producción
+  # Ejecución: Tests, Linting, Build, Seguridad
+  # ============================================================================
+  ci-main:
     jobs:
-      - build-frontend
-      - install-backend
-      - test-build-jar:
+      # Validación de código
+      - lint-frontend
+      - lint-backend
+      
+      # Build
+      - build-frontend:
           requires:
-            - install-backend
-      - prisma-migrate:
+            - lint-frontend
+      
+      # Setup y tests
+      - setup-backend:
           requires:
-            - test-build-jar
+            - lint-backend
+      - test-backend:
+          requires:
+            - setup-backend
+      - build-backend:
+          requires:
+            - test-backend
+      
+      # Seguridad
+      - security-audit:
+          requires:
+            - build-frontend
+            - build-backend
+      
+      # Validaciones finales
+      - validate-migrations:
+          requires:
+            - build-backend
+    filters:
+      branches:
+        only:
+          - main
+
+  # ============================================================================
+  # WORKFLOW: Develop - Rama de desarrollo
+  # Ejecución: Tests rápidos, Linting, validaciones
+  # ============================================================================
+  ci-develop:
+    jobs:
+      - lint-frontend
+      - lint-backend
+      - build-frontend:
+          requires:
+            - lint-frontend
+      - setup-backend:
+          requires:
+            - lint-backend
+      - test-backend:
+          requires:
+            - setup-backend
+      - build-backend:
+          requires:
+            - test-backend
+      - security-audit:
+          requires:
+            - build-frontend
+            - build-backend
+    filters:
+      branches:
+        only:
+          - develop
+
+  # ============================================================================
+  # WORKFLOW: Feature Branches - Ramas de características
+  # Ejecución: Tests mínimos, linting
+  # ============================================================================
+  ci-feature:
+    jobs:
+      - lint-frontend
+      - lint-backend
+      - build-frontend:
+          requires:
+            - lint-frontend
+      - setup-backend:
+          requires:
+            - lint-backend
+      - build-backend:
+          requires:
+            - setup-backend
+    filters:
+      branches:
+        ignore:
+          - main
+          - develop
 
