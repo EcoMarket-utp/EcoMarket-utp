@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { AuthService } from '../../../services/auth.service';
+import { AuthService, AuthRequest } from '../../../services/auth.service';
 
 @Component({
   selector: 'app-login',
@@ -22,8 +22,8 @@ export class LoginComponent {
     private router: Router
   ) {
     this.loginForm = this.formBuilder.group({
-      email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(6)]]
+      usernameOrEmail: ['', [Validators.required]],
+      password: ['', [Validators.required]]
     });
   }
 
@@ -37,12 +37,14 @@ export class LoginComponent {
     this.loading = true;
     this.error = '';
 
-    this.authService.login(this.loginForm.value).subscribe({
-      next: (response) => {
+    const credentials: AuthRequest = this.loginForm.value;
+
+    this.authService.login(credentials).subscribe({
+      next: (response: any) => {
         this.loading = false;
-        this.router.navigate(['/dashboard']);
+        this.router.navigate(['/']);
       },
-      error: (error) => {
+      error: (error: any) => {
         this.loading = false;
         this.error = error.error?.message || 'Error en el login';
       }

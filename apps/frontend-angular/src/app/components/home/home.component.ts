@@ -13,6 +13,20 @@ import { ProductsService } from '../../services/products.service';
 })
 export class HomeComponent {
   products = this.productsService.getFeatured();
+  currentSlide = 0;
+  totalSlides = 3;
 
   constructor(private productsService: ProductsService) {}
+
+  nextSlide() {
+    this.currentSlide = (this.currentSlide + 1) % this.totalSlides;
+  }
+
+  prevSlide() {
+    this.currentSlide = (this.currentSlide - 1 + this.totalSlides) % this.totalSlides;
+  }
+
+  setSlide(index: number) {
+    this.currentSlide = index;
+  }
 }
