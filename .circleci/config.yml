@@ -9,8 +9,9 @@ version: 2.1
 executors:
   node-executor:
     docker:
-      # Imagen oficial de CircleCI para Node.js 20 con navegadores y SSH incluidos
-      - image: cimg/node:20.10-browsers
+      # Imagen oficial de Node.js basada en Debian Bookworm
+      # Incluye: bash, apt-get, openssh-client, git y todas las herramientas necesarias
+      - image: node:20-bookworm
     working_directory: ~/repo
     environment:
       # Variables globales de ambiente
@@ -25,9 +26,8 @@ jobs:
     executor: node-executor
     steps:
       - run:
-          name: Instalar OpenSSH
-          command: |
-            which ssh || apt-get update && apt-get install -y openssh-client
+          name: Asegurar OpenSSH disponible
+          command: apt-get update && apt-get install -y openssh-client
       - checkout
       - restore_cache:
           keys:
@@ -60,9 +60,8 @@ jobs:
     executor: node-executor
     steps:
       - run:
-          name: Instalar OpenSSH
-          command: |
-            which ssh || apt-get update && apt-get install -y openssh-client
+          name: Asegurar OpenSSH disponible
+          command: apt-get update && apt-get install -y openssh-client
       - checkout
       - restore_cache:
           keys:
@@ -98,9 +97,8 @@ jobs:
       CI: true
     steps:
       - run:
-          name: Instalar OpenSSH
-          command: |
-            which ssh || apt-get update && apt-get install -y openssh-client
+          name: Asegurar OpenSSH disponible
+          command: apt-get update && apt-get install -y openssh-client
       - checkout
       - restore_cache:
           keys:
@@ -143,9 +141,8 @@ jobs:
     executor: node-executor
     steps:
       - run:
-          name: Instalar OpenSSH
-          command: |
-            which ssh || apt-get update && apt-get install -y openssh-client
+          name: Asegurar OpenSSH disponible
+          command: apt-get update && apt-get install -y openssh-client
       - checkout
       - restore_cache:
           keys:
@@ -180,9 +177,8 @@ jobs:
       CI: true
     steps:
       - run:
-          name: Instalar OpenSSH
-          command: |
-            which ssh || apt-get update && apt-get install -y openssh-client
+          name: Asegurar OpenSSH disponible
+          command: apt-get update && apt-get install -y openssh-client
       - checkout
       - attach_workspace:
           at: .
@@ -222,9 +218,8 @@ jobs:
       CI: true
     steps:
       - run:
-          name: Instalar OpenSSH
-          command: |
-            which ssh || apt-get update && apt-get install -y openssh-client
+          name: Asegurar OpenSSH disponible
+          command: apt-get update && apt-get install -y openssh-client
       - checkout
       - attach_workspace:
           at: .
@@ -266,9 +261,8 @@ jobs:
     executor: node-executor
     steps:
       - run:
-          name: Instalar OpenSSH
-          command: |
-            which ssh || apt-get update && apt-get install -y openssh-client
+          name: Asegurar OpenSSH disponible
+          command: apt-get update && apt-get install -y openssh-client
       - checkout
       - restore_cache:
           keys:
@@ -293,9 +287,8 @@ jobs:
     executor: node-executor
     steps:
       - run:
-          name: Instalar OpenSSH
-          command: |
-            which ssh || apt-get update && apt-get install -y openssh-client
+          name: Asegurar OpenSSH disponible
+          command: apt-get update && apt-get install -y openssh-client
       - checkout
       - attach_workspace:
           at: .
