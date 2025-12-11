@@ -189,15 +189,12 @@ export class CategoriesService {
       where: { category_id: BigInt(id), is_active: true },
       skip,
       take,
-      include: {
-        users: {
-          select: {
-            id: true,
-            email: true,
-            first_name: true,
-            last_name: true,
-          },
-        },
+      select: {
+        id: true,
+        name: true,
+        price: true,
+        is_active: true,
+        created_at: true,
       },
       orderBy: { created_at: 'desc' },
     });
