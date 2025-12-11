@@ -1,0 +1,56 @@
+<div class="admin-container">
+  <h1>Admin Dashboard</h1>
+
+  <!-- Tabs -->
+  <div class="admin-tabs">
+    <button
+      (click)="activeTab = 'dashboard'"
+      [class.active]="activeTab === 'dashboard'"
+    >
+      Dashboard
+    </button>
+    <button
+      (click)="activeTab = 'products'"
+      [class.active]="activeTab === 'products'"
+    >
+      Products
+    </button>
+    <button
+      (click)="activeTab = 'users'"
+      [class.active]="activeTab === 'users'"
+    >
+      Users
+    </button>
+    <button
+      (click)="activeTab = 'orders'"
+      [class.active]="activeTab === 'orders'"
+    >
+      Orders
+    </button>
+  </div>
+
+  <!-- Dashboard -->
+  <div class="admin-content" *ngIf="activeTab === 'dashboard'">
+    <h2>Dashboard Overview</h2>
+    <p>Welcome to the admin panel. Select a tab to manage content.</p>
+  </div>
+
+  <!-- Products -->
+  <div class="admin-content" *ngIf="activeTab === 'products'">
+    <h2>Manage Products</h2>
+    <button class="btn btn-primary">Add New Product</button>
+    <!-- Product list would go here -->
+  </div>
+
+  <!-- Users -->
+  <div class="admin-content" *ngIf="activeTab === 'users'">
+    <h2>Manage Users</h2>
+    <!-- User list would go here -->
+  </div>
+
+  <!-- Orders -->
+  <div class="admin-content" *ngIf="activeTab === 'orders'">
+    <h2>Manage Orders</h2>
+    <!-- Order list would go here -->
+  </div>
+</div>

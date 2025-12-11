@@ -1,0 +1,73 @@
+<div class="products-container">
+  <!-- Search Bar -->
+  <div class="search-section">
+    <div class="search-box">
+      <input
+        type="text"
+        class="search-input"
+        placeholder="Search products..."
+        [(ngModel)]="searchQuery"
+        (keyup.enter)="onSearch()"
+      />
+      <button class="search-btn" (click)="onSearch()">Search</button>
+    </div>
+  </div>
+
+  <!-- Error Message -->
+  <div class="alert alert-danger" *ngIf="error">
+    {{ error }}
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading-spinner" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>Loading products...</p>
+  </div>
+
+  <!-- Products Grid -->
+  <div class="products-grid" *ngIf="!loading && products.length > 0">
+    <div class="product-card" *ngFor="let product of products" (click)="onProductClick(product.id)">
+      <div class="product-image">
+        <img
+          [src]="product.images?.[0]?.url || 'assets/placeholder.png'"
+          [alt]="product.name"
+        />
+        <div class="product-badge" *ngIf="product.discount">
+          -{{ product.discount }}%
+        </div>
+      </div>
+      <div class="product-info">
+        <h3 class="product-name">{{ product.name }}</h3>
+        <p class="product-description">{{ product.description | slice: 0: 60 }}...</p>
+        <div class="product-rating" *ngIf="product.averageRating">
+          <span class="stars">★★★★★</span>
+          <span class="rating-text">({{ product.averageRating | number: '1.1-1' }})</span>
+        </div>
+        <div class="product-footer">
+          <span class="price">{{ product.price | currencyFormat }}</span>
+          <button class="btn-add-cart">Add to Cart</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- No Products State -->
+  <div class="no-products" *ngIf="!loading && products.length === 0">
+    <p>No products found. Try a different search.</p>
+    <button class="btn btn-primary" (click)="searchQuery = ''; loadProducts()">
+      View All Products
+    </button>
+  </div>
+
+  <!-- Pagination -->
+  <div class="pagination" *ngIf="!loading && totalPages > 1">
+    <button
+      class="page-btn"
+      *ngFor="let page of [].constructor(totalPages); let i = index"
+      (click)="onPageChange(i + 1)"
+      [class.active]="i + 1 === currentPage"
+    >
+      {{ i + 1 }}
+    </button>
+  </div>
+</div>

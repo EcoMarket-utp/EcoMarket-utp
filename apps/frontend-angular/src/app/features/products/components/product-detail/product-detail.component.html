@@ -1,0 +1,112 @@
+<div class="product-detail-container">
+  <!-- Back Button -->
+  <button class="btn-back" (click)="goBack()">← Back to Products</button>
+
+  <!-- Error Message -->
+  <div class="alert alert-danger" *ngIf="error">
+    {{ error }}
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading-spinner" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>Loading product details...</p>
+  </div>
+
+  <!-- Product Detail -->
+  <div class="product-detail" *ngIf="!loading && product">
+    <!-- Left: Images -->
+    <div class="product-images">
+      <div class="main-image">
+        <img
+          [src]="product.images?.[selectedImageIndex]?.url || 'assets/placeholder.png'"
+          [alt]="product.name"
+        />
+        <div class="product-badge" *ngIf="product.discount">
+          -{{ product.discount }}%
+        </div>
+      </div>
+      <div class="thumbnail-gallery">
+        <div
+          class="thumbnail"
+          *ngFor="let image of product.images; let i = index"
+          (click)="selectImage(i)"
+          [class.active]="i === selectedImageIndex"
+        >
+          <img [src]="image.url" [alt]="product.name" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Info -->
+    <div class="product-details">
+      <h1 class="product-name">{{ product.name }}</h1>
+
+      <!-- Rating -->
+      <div class="product-rating" *ngIf="product.averageRating">
+        <span class="stars">★★★★★</span>
+        <span class="rating-text">({{ product.averageRating | number: '1.1-1' }} - {{ product.reviews?.length || 0 }} reviews)</span>
+      </div>
+
+      <!-- Price -->
+      <div class="price-section">
+        <span class="price">{{ product.price | currencyFormat }}</span>
+        <span class="original-price" *ngIf="product.originalPrice">
+          {{ product.originalPrice | currencyFormat }}
+        </span>
+      </div>
+
+      <!-- Description -->
+      <div class="description">
+        <h3>Description</h3>
+        <p>{{ product.description }}</p>
+      </div>
+
+      <!-- Tags -->
+      <div class="tags" *ngIf="product.tags && product.tags.length > 0">
+        <h4>Tags:</h4>
+        <span class="tag" *ngFor="let tag of product.tags">{{ tag.name }}</span>
+      </div>
+
+      <!-- Quantity & Add to Cart -->
+      <div class="purchase-section">
+        <div class="quantity-selector">
+          <button (click)="decrementQuantity()">−</button>
+          <input type="number" [(ngModel)]="quantity" readonly />
+          <button (click)="incrementQuantity()">+</button>
+        </div>
+        <button class="btn-add-cart" (click)="addToCart()">Add to Cart</button>
+      </div>
+
+      <!-- Stock Status -->
+      <div class="stock-status" [class.in-stock]="product.stock! > 0">
+        <span *ngIf="product.stock! > 0">
+          ✓ In Stock ({{ product.stock }} available)
+        </span>
+        <span *ngIf="product.stock! <= 0">
+          ✗ Out of Stock
+        </span>
+      </div>
+
+      <!-- Seller Info -->
+      <div class="seller-info" *ngIf="product.seller">
+        <h4>Sold by: {{ product.seller.name }}</h4>
+        <p class="seller-rating">★★★★★ ({{ product.seller.rating }})</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reviews Section -->
+  <div class="reviews-section" *ngIf="!loading && product && product.reviews && product.reviews.length > 0">
+    <h3>Customer Reviews</h3>
+    <div class="reviews-list">
+      <div class="review-item" *ngFor="let review of product.reviews">
+        <div class="review-header">
+          <span class="reviewer-name">{{ review.reviewer?.firstName }} {{ review.reviewer?.lastName }}</span>
+          <span class="review-rating">★★★★★</span>
+        </div>
+        <p class="review-text">{{ review.comment }}</p>
+      </div>
+    </div>
+  </div>
+</div>

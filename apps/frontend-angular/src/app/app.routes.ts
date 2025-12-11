@@ -6,119 +6,65 @@ import { ROLES } from './shared/constants/app.constants';
 export const routes: Routes = [
   {
     path: '',
-    children: [
-      { path: '', redirectTo: 'home', pathMatch: 'full' },
-      {
-        path: 'home',
-        loadComponent: () =>
-          import('./components/home/home.component').then(
-            (m) => m.HomeComponent,
-          ),
-      },
-      {
-        path: 'auth',
-        children: [
-          {
-            path: 'login',
-            loadComponent: () =>
-              import('./components/auth/login/login.component').then(
-                (m) => m.LoginComponent,
-              ),
-          },
-          {
-            path: 'register',
-            loadComponent: () =>
-              import('./components/auth/register/register.component').then(
-                (m) => m.RegisterComponent,
-              ),
-          },
-        ],
-      },
-      {
-        path: 'products',
-        children: [
-          {
-            path: '',
-            loadComponent: () =>
-              import('./components/products/products.component').then(
-                (m) => m.ProductsComponent,
-              ),
-          },
-          {
-            path: ':id',
-            loadComponent: () =>
-              import('./components/product-detail/product-detail.component').then(
-                (m) => m.ProductDetailComponent,
-              ),
-          },
-        ],
-      },
-      {
-        path: 'cart',
-        loadComponent: () =>
-          import('./components/cart/cart.component').then(
-            (m) => m.CartComponent,
-          ),
-        canActivate: [AuthGuard],
-      },
-      {
-        path: 'checkout',
-        loadComponent: () =>
-          import('./components/checkout/checkout.component').then(
-            (m) => m.CheckoutComponent,
-          ),
-        canActivate: [AuthGuard],
-      },
-      {
-        path: 'dashboard',
-        loadComponent: () =>
-          import('./components/dashboard/dashboard.component').then(
-            (m) => m.DashboardComponent,
-          ),
-        canActivate: [AuthGuard],
-      },
-    ],
+    redirectTo: 'home',
+    pathMatch: 'full',
   },
+  {
+    path: 'home',
+    loadComponent: () =>
+      import('./components/home/home.component').then((m) => m.HomeComponent),
+  },
+  // Auth Feature Module with Lazy Loading
+  {
+    path: 'auth',
+    loadChildren: () =>
+      import('./features/auth/auth.module').then((m) => m.AuthModule),
+  },
+  // Products Feature Module with Lazy Loading
+  {
+    path: 'products',
+    loadChildren: () =>
+      import('./features/products/products.module').then(
+        (m) => m.ProductsModule
+      ),
+  },
+  // Cart Feature Module (Protected by AuthGuard)
+  {
+    path: 'cart',
+    canActivate: [AuthGuard],
+    loadChildren: () =>
+      import('./features/cart/cart.module').then((m) => m.CartModule),
+  },
+  // Checkout Feature Module (Protected by AuthGuard)
+  {
+    path: 'checkout',
+    canActivate: [AuthGuard],
+    loadChildren: () =>
+      import('./features/checkout/checkout.module').then(
+        (m) => m.CheckoutModule
+      ),
+  },
+  // Dashboard Feature Module (Protected by AuthGuard)
+  {
+    path: 'dashboard',
+    canActivate: [AuthGuard],
+    loadChildren: () =>
+      import('./features/dashboard/dashboard.module').then(
+        (m) => m.DashboardModule
+      ),
+  },
+  // Admin Feature Module (Protected by AuthGuard + RoleGuard)
   {
     path: 'admin',
     canActivate: [AuthGuard, RoleGuard],
     data: { roles: [ROLES.ADMIN] },
-    children: [
-      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
-      {
-        path: 'dashboard',
-        loadComponent: () =>
-          import('./components/admin/admin-dashboard/admin-dashboard.component').then(
-            (m) => m.AdminDashboardComponent,
-          ),
-      },
-      {
-        path: 'products',
-        children: [
-          {
-            path: '',
-            loadComponent: () =>
-              import('./components/admin/admin-products/admin-products.component').then(
-                (m) => m.AdminProductsComponent,
-              ),
-          },
-          {
-            path: 'new',
-            loadComponent: () =>
-              import('./components/admin/admin-product-form/admin-product-form.component').then(
-                (m) => m.AdminProductFormComponent,
-              ),
-          },
-          {
-            path: ':id/edit',
-            loadComponent: () =>
-              import('./components/admin/admin-product-form/admin-product-form.component').then(
-                (m) => m.AdminProductFormComponent,
-              ),
-          },
-        ],
-      },
-    ],
+    loadChildren: () =>
+      import('./features/admin/admin.module').then((m) => m.AdminModule),
   },
-  { path: '**', redirectTo: 'home' },
+  // Wildcard route for 404
+  {
+    path: '**',
+    redirectTo: 'home',
+  },
 ];
+

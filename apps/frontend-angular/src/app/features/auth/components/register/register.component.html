@@ -1,0 +1,138 @@
+<div class="register-container">
+  <div class="register-card">
+    <h1>Create Your Account</h1>
+    <p class="subtitle">Join EcoMarket today</p>
+
+    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
+      <!-- First Name Field -->
+      <div class="form-group">
+        <label for="firstName">First Name</label>
+        <input
+          id="firstName"
+          type="text"
+          class="form-control"
+          formControlName="firstName"
+          placeholder="John"
+          [class.is-invalid]="submitted && f['firstName'].errors"
+        />
+        <div class="invalid-feedback" *ngIf="submitted && f['firstName'].errors">
+          <div *ngIf="f['firstName'].errors['required']">First name is required</div>
+          <div *ngIf="f['firstName'].errors['minlength']">
+            First name must be at least 2 characters
+          </div>
+        </div>
+      </div>
+
+      <!-- Last Name Field -->
+      <div class="form-group">
+        <label for="lastName">Last Name</label>
+        <input
+          id="lastName"
+          type="text"
+          class="form-control"
+          formControlName="lastName"
+          placeholder="Doe"
+          [class.is-invalid]="submitted && f['lastName'].errors"
+        />
+        <div class="invalid-feedback" *ngIf="submitted && f['lastName'].errors">
+          <div *ngIf="f['lastName'].errors['required']">Last name is required</div>
+          <div *ngIf="f['lastName'].errors['minlength']">
+            Last name must be at least 2 characters
+          </div>
+        </div>
+      </div>
+
+      <!-- Email Field -->
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <input
+          id="email"
+          type="email"
+          class="form-control"
+          formControlName="email"
+          placeholder="you@example.com"
+          [class.is-invalid]="submitted && f['email'].errors"
+        />
+        <div class="invalid-feedback" *ngIf="submitted && f['email'].errors">
+          <div *ngIf="f['email'].errors['required']">Email is required</div>
+          <div *ngIf="f['email'].errors['email']">Email must be valid</div>
+        </div>
+      </div>
+
+      <!-- Password Field -->
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input
+          id="password"
+          type="password"
+          class="form-control"
+          formControlName="password"
+          placeholder="Enter your password"
+          [class.is-invalid]="submitted && f['password'].errors"
+        />
+        <div class="invalid-feedback" *ngIf="submitted && f['password'].errors">
+          <div *ngIf="f['password'].errors['required']">Password is required</div>
+          <div *ngIf="f['password'].errors['minlength']">
+            Password must be at least 6 characters
+          </div>
+        </div>
+      </div>
+
+      <!-- Confirm Password Field -->
+      <div class="form-group">
+        <label for="confirmPassword">Confirm Password</label>
+        <input
+          id="confirmPassword"
+          type="password"
+          class="form-control"
+          formControlName="confirmPassword"
+          placeholder="Confirm your password"
+          [class.is-invalid]="
+            submitted &&
+            (f['confirmPassword'].errors || registerForm.errors?.['passwordMismatch'])
+          "
+        />
+        <div
+          class="invalid-feedback"
+          *ngIf="
+            submitted &&
+            (f['confirmPassword'].errors || registerForm.errors?.['passwordMismatch'])
+          "
+        >
+          <div *ngIf="f['confirmPassword'].errors?.['required']">
+            Please confirm your password
+          </div>
+          <div *ngIf="registerForm.errors?.['passwordMismatch']">
+            Passwords do not match
+          </div>
+        </div>
+      </div>
+
+      <!-- Error Message -->
+      <div class="alert alert-danger" *ngIf="errorMessage">
+        {{ errorMessage }}
+      </div>
+
+      <!-- Submit Button -->
+      <button
+        type="submit"
+        class="btn btn-primary btn-block"
+        [disabled]="loading"
+      >
+        <span *ngIf="!loading">Create Account</span>
+        <span *ngIf="loading">
+          <span class="spinner-border spinner-border-sm me-2"></span>
+          Creating account...
+        </span>
+      </button>
+
+      <!-- Login Link -->
+      <div class="text-center mt-3">
+        <p>
+          Already have an account?
+          <a routerLink="/auth/login" class="link-primary">Sign in here</a>
+        </p>
+      </div>
+    </form>
+  </div>
+</div>

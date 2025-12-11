@@ -1,5 +1,16 @@
 export const environment = {
   production: false,
-  // Development backend (local). Override in production via environment.prod.ts or Vercel env vars.
-  apiUrl: 'http://localhost:8080/ecomarket/api'
+  apiUrl: 'http://localhost:3000/api',
+  apiBaseUrl: 'http://localhost:3000',
+  uploadUrl: 'http://localhost:3000/api/upload',
+  storageKeys: {
+    token: 'ecomarket_token',
+    refreshToken: 'ecomarket_refresh_token',
+    user: 'ecomarket_user',
+    cart: 'ecomarket_cart',
+  },
+  logging: {
+    enableConsoleLogging: true,
+    enableRemoteLogging: false,
+  },
 };

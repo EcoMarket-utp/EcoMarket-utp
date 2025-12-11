@@ -1,0 +1,187 @@
+<div class="checkout-container">
+  <h1>Checkout</h1>
+
+  <!-- Step Indicator -->
+  <div class="step-indicator">
+    <div [class.active]="currentStep >= 1" class="step">
+      <span class="step-number">1</span>
+      <span class="step-label">Shipping</span>
+    </div>
+    <div class="step-line" [style.width]="(currentStep - 1) * 50 + '%'"></div>
+    <div [class.active]="currentStep >= 2" class="step">
+      <span class="step-number">2</span>
+      <span class="step-label">Payment</span>
+    </div>
+    <div class="step-line" [style.width]="(currentStep - 2) * 50 + '%'"></div>
+    <div [class.active]="currentStep >= 3" class="step">
+      <span class="step-number">3</span>
+      <span class="step-label">Review</span>
+    </div>
+  </div>
+
+  <!-- Error Message -->
+  <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
+
+  <!-- Form -->
+  <form [formGroup]="checkoutForm">
+    <!-- Step 1: Shipping -->
+    <div class="checkout-step" *ngIf="currentStep === 1">
+      <h2>Shipping Address</h2>
+      <div class="form-row">
+        <div class="form-group">
+          <label>First Name</label>
+          <input
+            type="text"
+            class="form-control"
+            formControlName="firstName"
+            placeholder="John"
+          />
+        </div>
+        <div class="form-group">
+          <label>Last Name</label>
+          <input
+            type="text"
+            class="form-control"
+            formControlName="lastName"
+            placeholder="Doe"
+          />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Address</label>
+        <input
+          type="text"
+          class="form-control"
+          formControlName="address"
+          placeholder="123 Main St"
+        />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>City</label>
+          <input
+            type="text"
+            class="form-control"
+            formControlName="city"
+            placeholder="New York"
+          />
+        </div>
+        <div class="form-group">
+          <label>State</label>
+          <input
+            type="text"
+            class="form-control"
+            formControlName="state"
+            placeholder="NY"
+          />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>ZIP Code</label>
+          <input
+            type="text"
+            class="form-control"
+            formControlName="zipCode"
+            placeholder="10001"
+          />
+        </div>
+        <div class="form-group">
+          <label>Country</label>
+          <input
+            type="text"
+            class="form-control"
+            formControlName="country"
+            placeholder="USA"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Payment -->
+    <div class="checkout-step" *ngIf="currentStep === 2">
+      <h2>Payment Information</h2>
+
+      <div class="form-group">
+        <label>Cardholder Name</label>
+        <input
+          type="text"
+          class="form-control"
+          formControlName="cardName"
+          placeholder="John Doe"
+        />
+      </div>
+
+      <div class="form-group">
+        <label>Card Number</label>
+        <input
+          type="text"
+          class="form-control"
+          formControlName="cardNumber"
+          placeholder="1234 5678 9012 3456"
+        />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Expiry Date</label>
+          <input
+            type="text"
+            class="form-control"
+            formControlName="expiryDate"
+            placeholder="MM/YY"
+          />
+        </div>
+        <div class="form-group">
+          <label>CVV</label>
+          <input
+            type="text"
+            class="form-control"
+            formControlName="cvv"
+            placeholder="123"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3: Review -->
+    <div class="checkout-step" *ngIf="currentStep === 3">
+      <h2>Review Order</h2>
+      <p>Please review your order details before confirming.</p>
+      <!-- Order summary would go here -->
+    </div>
+
+    <!-- Navigation Buttons -->
+    <div class="checkout-buttons">
+      <button
+        type="button"
+        class="btn btn-secondary"
+        (click)="previousStep()"
+        *ngIf="currentStep > 1"
+      >
+        Previous
+      </button>
+      <button
+        type="button"
+        class="btn btn-primary"
+        (click)="nextStep()"
+        *ngIf="currentStep < 3"
+      >
+        Next
+      </button>
+      <button
+        type="button"
+        class="btn btn-success"
+        (click)="placeOrder()"
+        *ngIf="currentStep === 3"
+        [disabled]="loading"
+      >
+        <span *ngIf="!loading">Place Order</span>
+        <span *ngIf="loading">Processing...</span>
+      </button>
+    </div>
+  </form>
+</div>
