@@ -12,11 +12,12 @@ executors:
       # Imagen oficial de Node.js basada en Debian Bookworm
       # Incluye: bash, apt-get, openssh-client, git y todas las herramientas necesarias
       - image: node:20-bookworm
+    user: root
     working_directory: ~/repo
     environment:
       # Variables globales de ambiente
-      PNPM_HOME: /home/circleci/.pnpm
-      PATH: /home/circleci/.pnpm:$PATH
+      PNPM_HOME: /root/.pnpm
+      PATH: /root/.pnpm:$PATH
 
 jobs:
   # ============================================================================
