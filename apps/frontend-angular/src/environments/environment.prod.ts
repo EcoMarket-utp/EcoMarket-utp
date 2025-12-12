@@ -1,8 +1,8 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://ecomarket-api.onrender.com/api',
-  apiBaseUrl: 'https://ecomarket-api.onrender.com',
-  uploadUrl: 'https://ecomarket-api.onrender.com/api/upload',
+  apiUrl: '/api',
+  apiBaseUrl: '',
+  uploadUrl: '/api/upload',
   storageKeys: {
     token: 'ecomarket_token',
     refreshToken: 'ecomarket_refresh_token',

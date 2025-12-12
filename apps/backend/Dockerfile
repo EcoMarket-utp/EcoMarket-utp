@@ -55,4 +55,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3002', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
 
 # Comando de inicio con migraciones
-CMD ["sh", "-c", "npm run db:migrate:prod && npm run start:prod"]
+CMD ["sh", "-c", "npm run db:migrate:prod; npm run start:prod"]
