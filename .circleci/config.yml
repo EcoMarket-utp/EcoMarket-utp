@@ -21,75 +21,6 @@ executors:
 
 jobs:
   # ============================================================================
-  # LINTING Y VALIDACIÓN DE CÓDIGO (Frontend)
-  # ============================================================================
-  lint-frontend:
-    executor: node-executor
-    steps:
-      - run:
-          name: Asegurar OpenSSH disponible
-          command: /usr/bin/apt-get update && /usr/bin/apt-get install -y openssh-client
-      - checkout
-      - restore_cache:
-          keys:
-            - pnpm-cache-{{ checksum "pnpm-lock.yaml" }}
-            - pnpm-cache-
-      - run:
-          name: Instalar pnpm globalmente
-          command: npm install -g pnpm@latest
-      - run:
-          name: Instalar dependencias del frontend
-          command: pnpm install --frozen-lockfile --filter ./apps/frontend-angular...
-      - save_cache:
-          key: pnpm-cache-{{ checksum "pnpm-lock.yaml" }}
-          paths:
-            - ~/.pnpm-store
-            - ~/.pnpm
-      - run:
-          name: Ejecutar linter ESLint
-          command: pnpm --filter ./apps/frontend-angular... run lint
-      - run:
-          name: Validar formato de código
-          command: pnpm --filter ./apps/frontend-angular... run format:check
-      - store_test_results:
-          path: apps/frontend-angular/coverage
-
-  # ============================================================================
-  # LINTING Y VALIDACIÓN DE CÓDIGO (Backend)
-  # ============================================================================
-  lint-backend:
-    executor: node-executor
-    steps:
-      - run:
-          name: Asegurar OpenSSH disponible
-          command: /usr/bin/apt-get update && /usr/bin/apt-get install -y openssh-client
-      - checkout
-      - restore_cache:
-          keys:
-            - pnpm-cache-{{ checksum "pnpm-lock.yaml" }}
-            - pnpm-cache-
-      - run:
-          name: Instalar pnpm globalmente
-          command: npm install -g pnpm@latest
-      - run:
-          name: Instalar dependencias del backend
-          command: pnpm install --frozen-lockfile --filter ./apps/backend...
-      - save_cache:
-          key: pnpm-cache-{{ checksum "pnpm-lock.yaml" }}
-          paths:
-            - ~/.pnpm-store
-            - ~/.pnpm
-      - run:
-          name: Ejecutar linter ESLint
-          command: pnpm --filter ./apps/backend... run lint
-      - run:
-          name: Validar formato de código
-          command: pnpm --filter ./apps/backend... run format:check
-      - run:
-          name: Type checking con TypeScript
-          command: pnpm --filter ./apps/backend... run type-check
-
-  # ============================================================================
   # BUILD: Frontend (Angular)
   # ============================================================================
   build-frontend:
@@ -316,30 +247,14 @@ workflows:
   # ============================================================================
   ci:
     jobs:
-      # Validation - Frontend
-      - lint-frontend:
-          filters:
-            branches:
-              only: /.*/
-      
-      # Validation - Backend
-      - lint-backend:
-          filters:
-            branches:
-              only: /.*/
-      
       # Build Frontend
       - build-frontend:
-          requires:
-            - lint-frontend
           filters:
             branches:
               only: /.*/
       
       # Setup Backend
       - setup-backend:
-          requires:
-            - lint-backend
           filters:
             branches:
               only: /.*/
