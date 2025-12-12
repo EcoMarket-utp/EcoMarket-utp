@@ -4,22 +4,18 @@ async function testSignup() {
   const signupData = {
     firstName: 'Usuario',
     lastName: 'Prueba',
-    email: 'test-' + Date.now() + '@example.com', // Email único
+    email: 'test-' + Date.now() + '@example.com',
     password: 'password123',
   };
 
   try {
-    console.log('🚀 Registrando usuario de prueba...');
+    console.log('🚀 Enviando petición a:', 'https://ecomarket-utp-backend.onrender.com/api/auth/signup');
+    console.log('📤 Datos:', signupData);
     const response = await axios.post('https://ecomarket-utp-backend.onrender.com/api/auth/signup', signupData);
-    console.log('✅ Registro exitoso:', response.data);
-
-    // Verificar webhook en n8n (esperar un poco)
-    console.log('⏳ Esperando webhook... (5 segundos)');
-    await new Promise(resolve => setTimeout(resolve, 5000));
-
-    console.log('📧 Revisa n8n y el email para confirmar el webhook.');
+    console.log('✅ Respuesta:', response.status, response.data);
   } catch (error) {
-    console.error('❌ Error en registro:', error.response?.data || error.message);
+    console.error('❌ Error:', error.response ? error.response.status : error.message);
+    console.error('Detalles:', error.response ? error.response.data : error);
   }
 }
 
