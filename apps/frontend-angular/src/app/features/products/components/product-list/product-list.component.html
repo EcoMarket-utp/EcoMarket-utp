@@ -11,6 +11,14 @@
       />
       <button class="search-btn" (click)="onSearch()">Search</button>
     </div>
+    <!-- Price Filters -->
+    <div class="price-filters mt-4 flex items-center space-x-2">
+      <label class="text-sm">Min</label>
+      <input type="number" [(ngModel)]="minPrice" (change)="applyLocalFilters()" class="px-2 py-1 border rounded w-24" />
+      <label class="text-sm">Max</label>
+      <input type="number" [(ngModel)]="maxPrice" (change)="applyLocalFilters()" class="px-2 py-1 border rounded w-24" />
+      <button class="ml-2 px-3 py-1 bg-gray-100 rounded" (click)="minPrice=null; maxPrice=null; loadProducts()">Clear</button>
+    </div>
   </div>
 
   <!-- Error Message -->
@@ -27,10 +35,12 @@
   <!-- Products Grid -->
   <div class="products-grid" *ngIf="!loading && products.length > 0">
     <div class="product-card" *ngFor="let product of products" (click)="onProductClick(product.id)">
-      <div class="product-image">
+        <div class="product-image">
         <img
-          [src]="product.images?.[0]?.url || 'assets/placeholder.png'"
+          [src]="product.imageUrl || product.images?.[0]?.image_url || 'assets/placeholder.png'"
           [alt]="product.name"
+          loading="lazy"
+          (error)="onImageError($event, product)"
         />
         <div class="product-badge" *ngIf="product.discount">
           -{{ product.discount }}%

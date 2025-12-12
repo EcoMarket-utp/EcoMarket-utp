@@ -1,8 +1,8 @@
 export const environment = {
   production: false,
-  apiUrl: 'http://localhost:3000/api',
-  apiBaseUrl: 'http://localhost:3000',
-  uploadUrl: 'http://localhost:3000/api/upload',
+  apiUrl: 'http://localhost:3002/api',
+  apiBaseUrl: 'http://localhost:3002',
+  uploadUrl: 'http://localhost:3002/api/upload',
   storageKeys: {
     token: 'ecomarket_token',
     refreshToken: 'ecomarket_refresh_token',

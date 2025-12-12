@@ -1,8 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { ProductCardComponent } from '../product-card/product-card.component';
 import { ProductsService } from '../../services/products.service';
+import { Product } from '../../models/product.model';
 
 @Component({
   selector: 'app-home',
@@ -11,12 +12,19 @@ import { ProductsService } from '../../services/products.service';
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss'
 })
-export class HomeComponent {
-  products = this.productsService.getFeatured();
+export class HomeComponent implements OnInit {
+  products: Product[] = [];
   currentSlide = 0;
   totalSlides = 3;
 
   constructor(private productsService: ProductsService) {}
+
+  ngOnInit(): void {
+    // Subscribe to products stream and compute featured dynamically
+    this.productsService.products$.subscribe((all: Product[]) => {
+      this.products = all.slice(0, 3);
+    });
+  }
 
   nextSlide() {
     this.currentSlide = (this.currentSlide + 1) % this.totalSlides;
