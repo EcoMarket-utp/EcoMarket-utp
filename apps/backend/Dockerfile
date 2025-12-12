@@ -44,7 +44,7 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 # Copiar dist compilado
 COPY --from=builder /app/dist ./dist
 
-# Copiar migraciones de Prisma
+# Copiar prisma (necesario para migraciones)
 COPY --from=builder /app/prisma ./prisma
 
 # Exponer puerto
