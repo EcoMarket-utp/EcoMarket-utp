@@ -35,6 +35,9 @@ COPY apps/backend/package*.json apps/backend/package-lock.json ./
 # Instalar solo dependencias de producción
 RUN npm ci --only=production --legacy-peer-deps
 
+# Instalar Prisma CLI globalmente para migraciones
+RUN npm install -g prisma
+
 # Copiar el cliente de Prisma generado
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
