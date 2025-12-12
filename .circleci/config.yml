@@ -12,12 +12,12 @@ executors:
       # Imagen oficial de CircleCI para Node.js basada en Ubuntu (actualizada)
       # Incluye: bash, apt-get, openssh-client, git y todas las herramientas necesarias
       - image: cimg/node:20.18
-        user: root
+        user: circleci
     working_directory: ~/repo
     environment:
       # Variables globales de ambiente
-      PNPM_HOME: /root/.pnpm
-      PATH: /root/.pnpm:$PATH
+      PNPM_HOME: /home/circleci/.pnpm
+      PATH: /home/circleci/.pnpm:$PATH
 
 jobs:
   # ============================================================================
@@ -28,9 +28,6 @@ jobs:
     environment:
       CI: true
     steps:
-      - run:
-          name: Asegurar OpenSSH disponible
-          command: apt-get update -y --allow-insecure-repositories && apt-get install -y openssh-client
       - checkout
       - restore_cache:
           keys:
@@ -72,9 +69,6 @@ jobs:
   setup-backend:
     executor: node-executor
     steps:
-      - run:
-          name: Asegurar OpenSSH disponible
-          command: apt-get update -y --allow-insecure-repositories && apt-get install -y openssh-client
       - checkout
       - restore_cache:
           keys:
@@ -108,9 +102,6 @@ jobs:
     environment:
       CI: true
     steps:
-      - run:
-          name: Asegurar OpenSSH disponible
-          command: apt-get update -y --allow-insecure-repositories && apt-get install -y openssh-client
       - checkout
       - attach_workspace:
           at: .
@@ -149,9 +140,6 @@ jobs:
     environment:
       CI: true
     steps:
-      - run:
-          name: Asegurar OpenSSH disponible
-          command: apt-get update -y --allow-insecure-repositories && apt-get install -y openssh-client
       - checkout
       - attach_workspace:
           at: .
@@ -192,9 +180,6 @@ jobs:
   security-audit:
     executor: node-executor
     steps:
-      - run:
-          name: Asegurar OpenSSH disponible
-          command: apt-get update -y --allow-insecure-repositories && apt-get install -y openssh-client
       - checkout
       - restore_cache:
           keys:
@@ -218,9 +203,6 @@ jobs:
   validate-migrations:
     executor: node-executor
     steps:
-      - run:
-          name: Asegurar OpenSSH disponible
-          command: apt-get update && apt-get install -y openssh-client
       - checkout
       - attach_workspace:
           at: .
