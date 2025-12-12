@@ -62,9 +62,19 @@ git push origin dev
 - Revisa los logs en Render si hay errores (pestaña Logs en cada servicio).
 - Para el backend, asegúrate de que las migraciones de Prisma se ejecuten (verifica el Dockerfile o agrega un comando si es necesario).
 
+## Paso 5: Desactivar el Redeploy Automático (Recomendado para Plan Free)
+
+Para evitar consumos innecesarios en el plan gratuito de Render, desactiva el redeploy automático:
+
+1. Ve al dashboard de Render y selecciona cada servicio (backend y frontend).
+2. En la pestaña **Settings**, busca la opción **Auto-Deploy**.
+3. Desactívala (toggle off).
+4. Ahora los servicios solo se redeployarán manualmente cuando hagas clic en **Manual Deploy**.
+
 ## Notas Adicionales
 
 - **Actualizaciones**: Render detecta cambios en GitHub automáticamente y redeploya. Solo haz push a la rama `dev`.
+- **Redeploy Manual**: Para el plan gratuito, es recomendable desactivar el auto-redeploy (ver Paso 5) para evitar consumos innecesarios.
 - **Base de Datos**: Si necesitas reiniciar o cambiar la DB, hazlo desde el panel de PostgreSQL en Render.
 - **Costos**: El plan Free es suficiente para pruebas, pero limita el uso. Actualiza si necesitas más.
 - **Seguridad**: Nunca expongas claves sensibles en el código. Usa siempre variables de entorno.
