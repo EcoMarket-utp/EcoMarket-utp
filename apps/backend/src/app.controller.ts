@@ -10,3 +10,4 @@ export class AppController {
   getHello() {
     // Redirects to API documentation
   }
+}
