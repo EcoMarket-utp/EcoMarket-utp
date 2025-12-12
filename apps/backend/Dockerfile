@@ -7,7 +7,7 @@ WORKDIR /app
 RUN npm install -g npm
 
 # Copiar archivos de dependencias
-COPY apps/backend/package*.json ./
+COPY apps/backend/package*.json apps/backend/package-lock.json ./
 
 # Instalar dependencias
 RUN npm ci
@@ -30,7 +30,7 @@ WORKDIR /app
 RUN npm install -g npm
 
 # Copiar package.json
-COPY apps/backend/package*.json ./
+COPY apps/backend/package*.json apps/backend/package-lock.json ./
 
 # Instalar solo dependencias de producción
 RUN npm ci --only=production
