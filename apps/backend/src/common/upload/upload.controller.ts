@@ -16,7 +16,7 @@ import { ApiOperation, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import type { Multer } from 'multer';
 import { UploadService } from '../services/upload.service';
 
-@Controller('api/uploads')
+@Controller('uploads')
 export class UploadController {
   constructor(private readonly uploadService: UploadService) {}
 
