@@ -1,3 +1,5 @@
+import { Review } from './review.model';
+
 export interface Product {
   id: bigint;
   name: string;
@@ -21,6 +23,7 @@ export interface Product {
   updated_at: Date;
   images?: ProductImage[];
   tags?: string[];
+  reviews?: Review[];
 }
 
 export interface ProductImage {

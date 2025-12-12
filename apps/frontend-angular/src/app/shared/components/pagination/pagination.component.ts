@@ -16,6 +16,9 @@ export class PaginationComponent {
 
   @Output() pageChange = new EventEmitter<number>();
 
+  // Expose Math for template
+  Math = Math;
+
   get pages(): number[] {
     const pages: number[] = [];
     const maxPagesToShow = 5;

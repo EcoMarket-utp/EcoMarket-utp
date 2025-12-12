@@ -5,13 +5,15 @@ export interface Review {
   order_item_id?: bigint;
   rating: number; // 1-5
   title: string;
-  content: string;
+  comment: string; // Changed from content to comment to match template
   is_verified: boolean;
   helpful_count: number;
   created_at: Date;
   updated_at: Date;
-  user?: {
+  reviewer?: { // Changed from user to reviewer
     id: bigint;
+    firstName: string;
+    lastName: string;
     username: string;
   };
   responses?: ReviewResponse[];
