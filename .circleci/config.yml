@@ -9,10 +9,8 @@ version: 2.1
 executors:
   node-executor:
     docker:
-      # Imagen oficial de CircleCI para Node.js basada en Ubuntu (actualizada)
-      # Incluye: bash, apt-get, openssh-client, git y todas las herramientas necesarias
-      - image: cimg/node:20.18
-        user: circleci
+      # Imagen base de CircleCI con Ubuntu y herramientas, incluyendo openssh-client
+      - image: cimg/base:stable
     working_directory: ~/repo
     environment:
       # Variables globales de ambiente
@@ -29,6 +27,11 @@ jobs:
       CI: true
     steps:
       - checkout
+      - run:
+          name: Install Node.js
+          command: |
+            curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+            apt-get install -y nodejs
       - restore_cache:
           keys:
             - pnpm-cache-{{ checksum "pnpm-lock.yaml" }}
@@ -70,6 +73,11 @@ jobs:
     executor: node-executor
     steps:
       - checkout
+      - run:
+          name: Install Node.js
+          command: |
+            curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+            apt-get install -y nodejs
       - restore_cache:
           keys:
             - pnpm-cache-{{ checksum "pnpm-lock.yaml" }}
@@ -103,6 +111,11 @@ jobs:
       CI: true
     steps:
       - checkout
+      - run:
+          name: Install Node.js
+          command: |
+            curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+            apt-get install -y nodejs
       - attach_workspace:
           at: .
       - restore_cache:
@@ -141,6 +154,11 @@ jobs:
       CI: true
     steps:
       - checkout
+      - run:
+          name: Install Node.js
+          command: |
+            curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+            apt-get install -y nodejs
       - attach_workspace:
           at: .
       - restore_cache:
@@ -181,6 +199,11 @@ jobs:
     executor: node-executor
     steps:
       - checkout
+      - run:
+          name: Install Node.js
+          command: |
+            curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+            apt-get install -y nodejs
       - restore_cache:
           keys:
             - pnpm-cache-{{ checksum "pnpm-lock.yaml" }}
@@ -204,6 +227,11 @@ jobs:
     executor: node-executor
     steps:
       - checkout
+      - run:
+          name: Install Node.js
+          command: |
+            curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+            apt-get install -y nodejs
       - attach_workspace:
           at: .
       - restore_cache:
