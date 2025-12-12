@@ -1,5 +1,6 @@
-import { Injectable } from '@angular/core';
+import { Injectable, Inject, PLATFORM_ID } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { isPlatformBrowser } from '@angular/common';
 import { Cart, CartItem, AddToCartRequest } from '../../../shared/models/cart.model';
 
 @Injectable({
@@ -17,8 +18,10 @@ export class CartService {
 
   cart$ = this.cartSubject.asObservable();
 
-  constructor() {
-    this.loadCart();
+  constructor(@Inject(PLATFORM_ID) private platformId: Object) {
+    if (isPlatformBrowser(this.platformId)) {
+      this.loadCart();
+    }
   }
 
   private loadCart(): void {
@@ -87,16 +90,20 @@ export class CartService {
       created_at: new Date(),
       updated_at: new Date(),
     });
-    localStorage.removeItem('cart');
+    if (isPlatformBrowser(this.platformId)) {
+      localStorage.removeItem('cart');
+    }
   }
 
   private updateCart(cart: Cart): void {
     this.cartSubject.next(cart);
     // Convert bigints to strings for localStorage
-    const cartStr = JSON.stringify(cart, (key, value) =>
-      typeof value === 'bigint' ? value.toString() : value,
-    );
-    localStorage.setItem('cart', cartStr);
+    if (isPlatformBrowser(this.platformId)) {
+      const cartStr = JSON.stringify(cart, (key, value) =>
+        typeof value === 'bigint' ? value.toString() : value,
+      );
+      localStorage.setItem('cart', cartStr);
+    }
   }
 
   getTotalItems(): Observable<number> {
