@@ -9,9 +9,9 @@ version: 2.1
 executors:
   node-executor:
     docker:
-      # Imagen oficial de CircleCI para Node.js basada en Ubuntu
+      # Imagen oficial de CircleCI para Node.js basada en Ubuntu (actualizada)
       # Incluye: bash, apt-get, openssh-client, git y todas las herramientas necesarias
-      - image: cimg/node:20.18-bookworm
+      - image: cimg/node:20.18
         user: root
     working_directory: ~/repo
     environment:
