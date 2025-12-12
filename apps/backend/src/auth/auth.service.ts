@@ -62,7 +62,7 @@ export class AuthService {
 
     // Enviar webhook a n8n para email de bienvenida
     try {
-      const n8nWebhookUrl = process.env.N8N_WEBHOOK_URL || 'http://localhost:5678/webhook-test/user-registration';
+      const n8nWebhookUrl = process.env.N8N_WEBHOOK_URL || 'https://n8n-7hcl.onrender.com/webhook/user-registration';
       await firstValueFrom(
         this.httpService.post(n8nWebhookUrl, {
           email: user.email,
