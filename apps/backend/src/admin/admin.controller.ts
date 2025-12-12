@@ -161,4 +161,15 @@ export class AdminController {
   deleteUser(@Param('id') id: string) {
     return this.adminService.deleteUser(id);
   }
+
+  /**
+   * Seed database with sample data
+   */
+  @Post('seed')
+  @HttpCode(200)
+  @ApiResponse({ status: 200, description: 'Database seeded successfully' })
+  @ApiResponse({ status: 500, description: 'Seeding failed' })
+  async seedDatabase() {
+    return this.adminService.seedDatabase();
+  }
 }

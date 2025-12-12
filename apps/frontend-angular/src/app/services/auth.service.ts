@@ -70,7 +70,7 @@ export class AuthService {
   }
 
   register(userData: RegisterRequest): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.API_URL}/auth/register`, userData)
+    return this.http.post<AuthResponse>(`${this.API_URL}/auth/signup`, userData)
       .pipe(
         tap((response: AuthResponse) => {
           if (isPlatformBrowser(this.platformId)) {

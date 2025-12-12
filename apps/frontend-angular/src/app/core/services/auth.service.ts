@@ -39,7 +39,7 @@ export class AuthService {
   }
 
   register(data: RegisterRequest): Observable<LoginResponse> {
-    return this.apiService.post<LoginResponse>('auth/register', data).pipe(
+    return this.apiService.post<LoginResponse>('auth/signup', data).pipe(
       tap((response) => {
         this.setToken(response.access_token);
         this.currentUserSubject.next(response.user);
