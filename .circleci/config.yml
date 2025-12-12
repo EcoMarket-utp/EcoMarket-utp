@@ -30,7 +30,7 @@ jobs:
     steps:
       - run:
           name: Asegurar OpenSSH disponible
-          command: /usr/bin/apt-get install -y openssh-client
+          command: apt-get update -y --allow-insecure-repositories && apt-get install -y openssh-client
       - checkout
       - restore_cache:
           keys:
@@ -74,7 +74,7 @@ jobs:
     steps:
       - run:
           name: Asegurar OpenSSH disponible
-          command: /usr/bin/apt-get install -y openssh-client
+          command: apt-get update -y --allow-insecure-repositories && apt-get install -y openssh-client
       - checkout
       - restore_cache:
           keys:
@@ -110,7 +110,7 @@ jobs:
     steps:
       - run:
           name: Asegurar OpenSSH disponible
-          command: /usr/bin/apt-get install -y openssh-client
+          command: apt-get update -y --allow-insecure-repositories && apt-get install -y openssh-client
       - checkout
       - attach_workspace:
           at: .
@@ -151,7 +151,7 @@ jobs:
     steps:
       - run:
           name: Asegurar OpenSSH disponible
-          command: /usr/bin/apt-get install -y openssh-client
+          command: apt-get update -y --allow-insecure-repositories && apt-get install -y openssh-client
       - checkout
       - attach_workspace:
           at: .
@@ -194,7 +194,7 @@ jobs:
     steps:
       - run:
           name: Asegurar OpenSSH disponible
-          command: /usr/bin/apt-get install -y openssh-client
+          command: apt-get update -y --allow-insecure-repositories && apt-get install -y openssh-client
       - checkout
       - restore_cache:
           keys:
