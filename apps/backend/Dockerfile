@@ -7,13 +7,13 @@ WORKDIR /app
 RUN npm install -g npm
 
 # Copiar archivos de dependencias
-COPY package*.json ./
+COPY apps/backend/package*.json ./
 
 # Instalar dependencias
 RUN npm ci
 
 # Copiar código fuente
-COPY . .
+COPY apps/backend ./
 
 # Generar cliente de Prisma
 RUN npm run db:generate
@@ -30,7 +30,7 @@ WORKDIR /app
 RUN npm install -g npm
 
 # Copiar package.json
-COPY package*.json ./
+COPY apps/backend/package*.json ./
 
 # Instalar solo dependencias de producción
 RUN npm ci --only=production
