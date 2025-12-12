@@ -55,11 +55,15 @@ export class AuthService {
       .pipe(
         tap((response: AuthResponse) => {
           if (isPlatformBrowser(this.platformId)) {
-            localStorage.setItem(this.TOKEN_KEY, response.token);
+            // Backend may return { token, user: { id, email, firstName, lastName } }
+            const token = (response as any).token || null;
+            const respUser = (response as any).user || response;
+
+            localStorage.setItem(this.TOKEN_KEY, token);
             const user: User = {
-              id: response.id,
-              username: response.username,
-              email: response.email,
+              id: respUser.id,
+              username: respUser.username || respUser.email?.split('@')[0] || respUser.firstName || '',
+              email: respUser.email,
               roles: [] // Will be decoded from JWT if needed
             };
             localStorage.setItem(this.USER_KEY, JSON.stringify(user));
@@ -74,11 +78,14 @@ export class AuthService {
       .pipe(
         tap((response: AuthResponse) => {
           if (isPlatformBrowser(this.platformId)) {
-            localStorage.setItem(this.TOKEN_KEY, response.token);
+            const token = (response as any).token || null;
+            const respUser = (response as any).user || response;
+
+            localStorage.setItem(this.TOKEN_KEY, token);
             const user: User = {
-              id: response.id,
-              username: response.username,
-              email: response.email,
+              id: respUser.id,
+              username: respUser.username || respUser.email?.split('@')[0] || respUser.firstName || '',
+              email: respUser.email,
               roles: []
             };
             localStorage.setItem(this.USER_KEY, JSON.stringify(user));
