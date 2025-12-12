@@ -10,7 +10,7 @@ RUN npm install -g npm
 COPY apps/backend/package*.json apps/backend/package-lock.json ./
 
 # Instalar dependencias
-RUN npm ci
+RUN npm ci --legacy-peer-deps
 
 # Copiar código fuente
 COPY apps/backend ./
@@ -33,7 +33,7 @@ RUN npm install -g npm
 COPY apps/backend/package*.json apps/backend/package-lock.json ./
 
 # Instalar solo dependencias de producción
-RUN npm ci --only=production
+RUN npm ci --only=production --legacy-peer-deps
 
 # Copiar el cliente de Prisma generado
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
