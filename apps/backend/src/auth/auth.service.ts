@@ -61,10 +61,8 @@ export class AuthService {
     await this.prisma.users_roles.create({ data: { user_id: user.id, role_id: role.id } });
 
     // Enviar webhook a n8n para email de bienvenida
-    // TEMPORALMENTE COMENTADO PARA DEPURAR ERROR 502
-    /*
     try {
-      const n8nWebhookUrl = process.env.N8N_WEBHOOK_URL || 'https://tu-n8n-instance.com/webhook/user-registration';
+      const n8nWebhookUrl = process.env.N8N_WEBHOOK_URL || 'http://localhost:5678/webhook-test/user-registration';
       await firstValueFrom(
         this.httpService.post(n8nWebhookUrl, {
           email: user.email,
@@ -79,7 +77,6 @@ export class AuthService {
       console.error(`❌ Error enviando webhook para usuario ${user.email}:`, error.message);
       // No lanzamos error para no interrumpir el registro
     }
-    */
 
     return {
       user: {
