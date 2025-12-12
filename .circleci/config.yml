@@ -26,7 +26,9 @@ jobs:
     environment:
       CI: true
     steps:
-      - checkout
+      - run:
+          name: Checkout
+          command: git clone https://x-access-token:$CIRCLE_OAUTH_TOKEN@github.com/EcoMarket-utp/EcoMarket-utp.git .
       - run:
           name: Install Node.js
           command: |
@@ -72,7 +74,9 @@ jobs:
   setup-backend:
     executor: node-executor
     steps:
-      - checkout
+      - run:
+          name: Checkout
+          command: git clone https://x-access-token:$CIRCLE_OAUTH_TOKEN@github.com/EcoMarket-utp/EcoMarket-utp.git .
       - run:
           name: Install Node.js
           command: |
@@ -110,7 +114,9 @@ jobs:
     environment:
       CI: true
     steps:
-      - checkout
+      - run:
+          name: Checkout
+          command: git clone https://x-access-token:$CIRCLE_OAUTH_TOKEN@github.com/EcoMarket-utp/EcoMarket-utp.git .
       - run:
           name: Install Node.js
           command: |
@@ -153,7 +159,9 @@ jobs:
     environment:
       CI: true
     steps:
-      - checkout
+      - run:
+          name: Checkout
+          command: git clone https://x-access-token:$CIRCLE_OAUTH_TOKEN@github.com/EcoMarket-utp/EcoMarket-utp.git .
       - run:
           name: Install Node.js
           command: |
@@ -198,7 +206,9 @@ jobs:
   security-audit:
     executor: node-executor
     steps:
-      - checkout
+      - run:
+          name: Checkout
+          command: git clone https://x-access-token:$CIRCLE_OAUTH_TOKEN@github.com/EcoMarket-utp/EcoMarket-utp.git .
       - run:
           name: Install Node.js
           command: |
