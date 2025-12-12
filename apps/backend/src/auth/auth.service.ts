@@ -3,6 +3,7 @@ import { HttpService } from '@nestjs/axios';
 import { PrismaService } from '../prisma/prisma.service';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 
@@ -111,5 +112,39 @@ export class AuthService {
       token,
       message: 'Login exitoso',
     };
+  }
+
+  async updateProfile(userId: string, dto: UpdateProfileDto) {
+    const updateData: any = {};
+
+    if (dto.firstName) updateData.first_name = dto.firstName;
+    if (dto.lastName) updateData.last_name = dto.lastName;
+    if (dto.email) updateData.email = dto.email;
+    if (dto.password) updateData.password = await bcrypt.hash(dto.password, 10);
+
+    const user = await this.prisma.users.update({
+      where: { id: parseInt(userId) },
+      data: updateData,
+    });
+
+    return {
+      user: {
+        id: user.id.toString(),
+        email: user.email,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        isActive: user.is_active,
+      },
+      message: 'Perfil actualizado exitosamente',
+    };
+  }
+
+  async deleteProfile(userId: string) {
+    await this.prisma.users.update({
+      where: { id: parseInt(userId) },
+      data: { is_active: false },
+    });
+
+    return { message: 'Cuenta eliminada exitosamente' };
   }
 }

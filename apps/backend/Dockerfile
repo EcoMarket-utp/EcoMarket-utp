@@ -18,6 +18,9 @@ COPY apps/backend ./
 # Generar cliente de Prisma
 RUN npm run db:generate
 
+# Ejecutar seed de la base de datos
+RUN npm run db:seed
+
 # Compilar TypeScript
 RUN npm run build
 

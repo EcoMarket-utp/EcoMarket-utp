@@ -1,8 +1,9 @@
-import { Controller, Post, Body, Get, UseGuards, Req } from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards, Req, Put, Delete } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { Roles } from './decorators/roles.decorator';
@@ -32,6 +33,22 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Perfil del usuario' })
   getProfile(@Req() req: any) {
     return req.user;
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Put('profile')
+  @ApiBearerAuth()
+  @ApiResponse({ status: 200, description: 'Perfil actualizado' })
+  updateProfile(@Req() req: any, @Body() dto: UpdateProfileDto) {
+    return this.authService.updateProfile(req.user.id, dto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete('profile')
+  @ApiBearerAuth()
+  @ApiResponse({ status: 200, description: 'Cuenta eliminada' })
+  deleteProfile(@Req() req: any) {
+    return this.authService.deleteProfile(req.user.id);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
