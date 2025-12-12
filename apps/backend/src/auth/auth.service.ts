@@ -58,9 +58,11 @@ export class AuthService {
     // Enviar webhook a n8n para email de bienvenida (fire-and-forget, no bloquea la respuesta)
     const n8nWebhookUrl = process.env.N8N_WEBHOOK_URL || 'https://n8n-7hcl.onrender.com/webhook/user-registration';
     this.httpService.post(n8nWebhookUrl, {
-      user_email: user.email,
-      user_name: `${user.first_name} ${user.last_name}`,
+      email: user.email,
+      first_name: user.first_name,
+      last_name: user.last_name,
       registration_type: 'Usuario',
+      user_id: user.id.toString(),
     }).subscribe({
       next: () => console.log(`✅ Webhook enviado para usuario: ${user.email}`),
       error: (error) => console.error(`❌ Error enviando webhook para usuario ${user.email}:`, error.message),
