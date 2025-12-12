@@ -27,6 +27,9 @@ jobs:
       CI: true
     steps:
       - run:
+          name: Install Git
+          command: apt-get update && apt-get install -y git
+      - run:
           name: Checkout
           command: git clone https://x-access-token:$CIRCLE_OAUTH_TOKEN@github.com/EcoMarket-utp/EcoMarket-utp.git .
       - run:
@@ -75,6 +78,9 @@ jobs:
     executor: node-executor
     steps:
       - run:
+          name: Install Git
+          command: apt-get update && apt-get install -y git
+      - run:
           name: Checkout
           command: git clone https://x-access-token:$CIRCLE_OAUTH_TOKEN@github.com/EcoMarket-utp/EcoMarket-utp.git .
       - run:
@@ -114,6 +120,9 @@ jobs:
     environment:
       CI: true
     steps:
+      - run:
+          name: Install Git
+          command: apt-get update && apt-get install -y git
       - run:
           name: Checkout
           command: git clone https://x-access-token:$CIRCLE_OAUTH_TOKEN@github.com/EcoMarket-utp/EcoMarket-utp.git .
@@ -159,6 +168,9 @@ jobs:
     environment:
       CI: true
     steps:
+      - run:
+          name: Install Git
+          command: apt-get update && apt-get install -y git
       - run:
           name: Checkout
           command: git clone https://x-access-token:$CIRCLE_OAUTH_TOKEN@github.com/EcoMarket-utp/EcoMarket-utp.git .
@@ -207,6 +219,9 @@ jobs:
     executor: node-executor
     steps:
       - run:
+          name: Install Git
+          command: apt-get update && apt-get install -y git
+      - run:
           name: Checkout
           command: git clone https://x-access-token:$CIRCLE_OAUTH_TOKEN@github.com/EcoMarket-utp/EcoMarket-utp.git .
       - run:
@@ -236,7 +251,12 @@ jobs:
   validate-migrations:
     executor: node-executor
     steps:
-      - checkout
+      - run:
+          name: Install Git
+          command: apt-get update && apt-get install -y git
+      - run:
+          name: Checkout
+          command: git clone https://x-access-token:$CIRCLE_OAUTH_TOKEN@github.com/EcoMarket-utp/EcoMarket-utp.git .
       - run:
           name: Install Node.js
           command: |
