@@ -1,8 +1,9 @@
-import { Injectable } from '@angular/core';
+import { Injectable, Inject, PLATFORM_ID } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { tap, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
+import { isPlatformBrowser } from '@angular/common';
 import { User, LoginRequest, LoginResponse, RegisterRequest } from '../../shared/models/user.model';
 import { STORAGE_KEYS } from '../../shared/constants/app.constants';
 import { ApiService } from './api.service';
@@ -20,9 +21,15 @@ export class AuthService {
   constructor(
     private apiService: ApiService,
     private http: HttpClient,
+    @Inject(PLATFORM_ID) private platformId: Object,
   ) {
-    this.loadCurrentUser();
+    this.isBrowser = isPlatformBrowser(this.platformId);
+    if (this.isBrowser) {
+      this.loadCurrentUser();
+    }
   }
+
+  private isBrowser: boolean = false;
 
   login(credentials: LoginRequest): Observable<LoginResponse> {
     return this.apiService.post<LoginResponse>('auth/login', credentials).pipe(
@@ -49,8 +56,10 @@ export class AuthService {
   }
 
   logout(): void {
-    localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
-    localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
+    if (this.isBrowser) {
+      localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+      localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
+    }
     this.currentUserSubject.next(null);
     this.isAuthenticatedSubject.next(false);
   }
@@ -68,14 +77,17 @@ export class AuthService {
   }
 
   getToken(): string | null {
+    if (!this.isBrowser) return null;
     return localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
   }
 
   private setToken(token: string): void {
+    if (!this.isBrowser) return;
     localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token);
   }
 
   private loadCurrentUser(): void {
+    if (!this.isBrowser) return;
     const storedUser = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
     if (storedUser) {
       try {

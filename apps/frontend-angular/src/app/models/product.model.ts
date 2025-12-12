@@ -8,6 +8,7 @@ export interface Product {
   categoryName: string;
   imageFilename: string | null;
   imageUrl: string | null;
+  imageCandidates?: string[];
   isOrganic: boolean | null;
   certifications: string | null;
   originCountry: string | null;

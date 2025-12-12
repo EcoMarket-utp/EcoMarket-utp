@@ -75,18 +75,22 @@ export class ProductDetailComponent implements OnInit {
     if (!this.product) {
       return this.placeholders['default'];
     }
-    // Si no hay imageFilename, usar placeholder directamente
-    if (!this.product.imageFilename) {
-      return this.placeholders[this.product.categoryName] || this.placeholders['default'];
-    }
-    // Si hay imageFilename, usar la URL del backend
-    return this.product.imageUrl;
+    // Prefer explicit imageUrl (may point to assets or backend). Fall back to placeholder.
+    if (this.product.imageUrl) return this.product.imageUrl;
+    return this.placeholders[this.product.categoryName] || this.placeholders['default'];
   }
 
   onImageError(event: Event): void {
-    // Si la imagen falla, usar un placeholder genérico
     const imgElement = event.target as HTMLImageElement;
-    imgElement.src = 'https://images.unsplash.com/photo-1532453288672-3a27e9be9efd?w=800&h=600&fit=crop';
+    const candidates = this.product?.imageCandidates || [];
+    const tryIndex = Number(imgElement.dataset['candidateIndex'] || '0');
+    const nextIndex = tryIndex + 1;
+    if (nextIndex < candidates.length) {
+      imgElement.dataset['candidateIndex'] = String(nextIndex);
+      imgElement.src = candidates[nextIndex];
+    } else {
+      imgElement.src = this.placeholders[this.product.categoryName] || this.placeholders['default'];
+    }
   }
 
   onReviewAdded(): void {

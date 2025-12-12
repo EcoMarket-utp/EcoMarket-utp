@@ -22,7 +22,8 @@
             [src]="getImageUrl()" 
             [alt]="product.name" 
             class="w-full h-96 md:h-full object-cover"
-            loading="lazy" />
+            loading="lazy"
+            (error)="onImageError($event)" />
         </div>
 
         <!-- Product Info -->

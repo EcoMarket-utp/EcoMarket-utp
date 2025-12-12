@@ -31,7 +31,6 @@ export class ProductsComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadProducts();
-    this.categories = this.productsService.getCategories();
   }
 
   loadProducts(): void {
@@ -39,6 +38,8 @@ export class ProductsComponent implements OnInit {
     this.productsService.getProducts().subscribe((products: any) => {
       this.products = products;
       this.filteredProducts = products;
+      // Derivar categorías desde los productos cargados
+      this.categories = [...new Set(products.map((p: any) => p.categoryName))];
       this.loading = false;
     });
   }
