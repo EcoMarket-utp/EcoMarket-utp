@@ -5,13 +5,13 @@ FROM node:20-alpine AS build
 WORKDIR /app
 
 # Copiar archivos de dependencias
-COPY package*.json ./
+COPY apps/frontend-angular/package*.json ./
 
 # Instalar dependencias
 RUN npm install
 
 # Copiar código fuente
-COPY . .
+COPY apps/frontend-angular ./
 
 # Build de producción
 RUN npm run build
@@ -20,7 +20,7 @@ RUN npm run build
 FROM nginx:1.25-alpine
 
 # Copiar configuración personalizada de Nginx
-COPY nginx.conf /etc/nginx/nginx.conf
+COPY apps/frontend-angular/nginx.conf /etc/nginx/nginx.conf
 
 # Copiar archivos compilados desde stage de build
 COPY --from=build /app/dist/frontend-angular/browser /usr/share/nginx/html
