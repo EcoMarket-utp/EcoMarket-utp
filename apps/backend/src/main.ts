@@ -28,6 +28,9 @@ async function bootstrap() {
   // Convert BigInt values to strings in all responses to avoid JSON serialization errors
   app.useGlobalInterceptors(new BigIntToStringInterceptor());
 
+  // Set global prefix for all routes
+  app.setGlobalPrefix('api');
+
   const swaggerConfig = new DocumentBuilder()
     .setTitle('EcoMarket API')
     .setDescription('Documentación de la API EcoMarket')
@@ -35,7 +38,7 @@ async function bootstrap() {
     .addBearerAuth()
     .build();
   const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api/docs', app, swaggerDocument);
+  SwaggerModule.setup('docs', app, swaggerDocument);
 
   const port = configService.get<number>('PORT', 3002);
 
