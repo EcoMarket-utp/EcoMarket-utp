@@ -1,11 +1,5 @@
-import {
-  Injectable,
-  ConflictException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable, ConflictException, UnauthorizedException } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
-import { firstValueFrom } from 'rxjs';
-
 import { PrismaService } from '../prisma/prisma.service';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
@@ -60,23 +54,18 @@ export class AuthService {
 
     await this.prisma.users_roles.create({ data: { user_id: user.id, role_id: role.id } });
 
-    // Enviar webhook a n8n para email de bienvenida
-    try {
-      const n8nWebhookUrl = process.env.N8N_WEBHOOK_URL || 'https://n8n-7hcl.onrender.com/webhook/user-registration';
-      await firstValueFrom(
-        this.httpService.post(n8nWebhookUrl, {
-          email: user.email,
-          first_name: user.first_name,
-          last_name: user.last_name,
-          registration_type: 'Usuario',
-          user_id: user.id.toString(),
-        })
-      );
-      console.log(`✅ Webhook enviado para usuario: ${user.email}`);
-    } catch (error) {
-      console.error(`❌ Error enviando webhook para usuario ${user.email}:`, error.message);
-      // No lanzamos error para no interrumpir el registro
-    }
+    // Enviar webhook a n8n para email de bienvenida (fire-and-forget, no bloquea la respuesta)
+    const n8nWebhookUrl = process.env.N8N_WEBHOOK_URL || 'https://n8n-7hcl.onrender.com/webhook/user-registration';
+    this.httpService.post(n8nWebhookUrl, {
+      email: user.email,
+      first_name: user.first_name,
+      last_name: user.last_name,
+      registration_type: 'Usuario',
+      user_id: user.id.toString(),
+    }).subscribe({
+      next: () => console.log(`✅ Webhook enviado para usuario: ${user.email}`),
+      error: (error) => console.error(`❌ Error enviando webhook para usuario ${user.email}:`, error.message),
+    });
 
     return {
       user: {
